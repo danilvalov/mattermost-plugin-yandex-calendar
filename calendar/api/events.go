@@ -244,7 +244,7 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attachment, err := views.RenderEventAsAttachment(event, mailbox.TimeZone, views.ShowTimezoneOption(mailbox.TimeZone))
+	attachment, err := views.RenderEventAsAttachment(event, mailbox.TimeZone, api.I18n, mattermostUserID, views.ShowTimezoneOption(mailbox.TimeZone))
 	if err != nil {
 		api.Logger.With(bot.LogContext{"err": err.Error()}).Errorf("createEvent, error rendering event as attachment")
 	}
@@ -252,7 +252,9 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 	// Event linking
 	if payload.ChannelID != "" {
 		if err := api.Store.StoreUserLinkedEvent(user.MattermostUserID, event.ICalUID, payload.ChannelID); err != nil {
-			api.Poster.DM(mattermostUserID, "Your event **%s** could not be linked to a channel. Please contact an administrator for more details.", event.Subject)
+			api.Poster.DM(mattermostUserID, api.Tr(mattermostUserID, "ycal.api.event_link_failed",
+				"Your event **{{.Subject}}** could not be linked to a channel. Please contact an administrator for more details.",
+				map[string]any{"Subject": event.Subject}))
 			api.Logger.With(bot.LogContext{"err": err.Error(), "userID": user.MattermostUserID}).Errorf("createEvent, error occurred while storing user linked event")
 			httputils.WriteInternalServerError(w, err)
 			return
@@ -261,11 +263,15 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		if err := api.Store.AddLinkedChannelToEvent(event.ICalUID, payload.ChannelID); err != nil {
 			api.Logger.With(bot.LogContext{"err": err}).Errorf("error linking event to channel")
 			defer func() {
-				api.Poster.DM(mattermostUserID, "You event **%s** could not be linked to a channel. Please contact an administrator for more details.", event.Subject)
+				api.Poster.DM(mattermostUserID, api.Tr(mattermostUserID, "ycal.api.event_link_failed",
+					"Your event **{{.Subject}}** could not be linked to a channel. Please contact an administrator for more details.",
+					map[string]any{"Subject": event.Subject}))
 			}()
 		} else {
 			post := &model.Post{
-				Message:   fmt.Sprintf("The event **%s** was linked to this channel by @%s", event.Subject, user.MattermostUsername),
+				Message: api.Tr(mattermostUserID, "ycal.api.event_linked_channel",
+					"The event **{{.Subject}}** was linked to this channel by @{{.User}}",
+					map[string]any{"Subject": event.Subject, "User": user.MattermostUsername}),
 				ChannelId: payload.ChannelID,
 			}
 			if attachment != nil {
@@ -277,9 +283,11 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if attachment == nil {
-			api.Poster.DM(mattermostUserID, "Your event: **%s** was created successfully.", event.Subject)
+			api.Poster.DM(mattermostUserID, api.Tr(mattermostUserID, "ycal.api.event_created_with_subject",
+				"Your event: **{{.Subject}}** was created successfully.", map[string]any{"Subject": event.Subject}))
 		} else {
-			api.Poster.DMWithMessageAndAttachments(mattermostUserID, "Your event was created successfully.", attachment)
+			api.Poster.DMWithMessageAndAttachments(mattermostUserID, api.Tr(mattermostUserID, "ycal.api.event_created",
+				"Your event was created successfully.", nil), attachment)
 		}
 	}
 

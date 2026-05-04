@@ -11,10 +11,12 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	pluginapilicense "github.com/mattermost/mattermost/server/public/pluginapi"
 	"github.com/mattermost/mattermost/server/public/pluginapi/experimental/command"
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 	"github.com/pkg/errors"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/locale"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
@@ -25,68 +27,87 @@ type Command struct {
 	Args      *model.CommandArgs
 	Config    *config.Config
 	ChannelID string
+	I18n      *mmi18n.Bundle
 }
 
-func getNotConnectedText(pluginURL string) string {
+// T localizes a string for the invoking user's locale.
+func (c *Command) T(id, defaultOther string, data map[string]any) string {
+	return locale.User(c.I18n, c.Args.UserId, id, defaultOther, data)
+}
+
+func (c *Command) notConnectedText() string {
 	connectPath := "/oauth2/connect"
 	if config.Provider.Features.PasswordAuth {
 		connectPath = "/caldav/connect"
 	}
-	return fmt.Sprintf(
-		"It looks like your Mattermost account is not connected to a %s account. [Click here to connect your account](%s%s) or use `/%s connect`.",
-		config.Provider.DisplayName,
-		pluginURL,
-		connectPath,
-		config.Provider.CommandTrigger,
-	)
+	connectURL := strings.TrimRight(c.Config.PluginURL, "/") + connectPath
+	return c.T("ycal.cmd.not_connected",
+		"It looks like your Mattermost account is not connected to a {{.DisplayName}} account. [Click here to connect your account]({{.ConnectURL}}) or use `/{{.Trigger}} connect`.",
+		map[string]any{
+			"DisplayName": config.Provider.DisplayName,
+			"ConnectURL":  connectURL,
+			"Trigger":     config.Provider.CommandTrigger,
+		})
 }
 
 type handleFunc func(parameters ...string) (string, bool, error)
 
-func getCommands() []*model.AutocompleteData {
+// localizeCmd resolves autocomplete / help strings. When bundle is nil, id is ignored and defaultOther is template-expanded.
+func localizeCmd(loc func(id, defaultOther string, data map[string]any) string, id, defaultOther string) string {
+	data := map[string]any{"DisplayName": config.Provider.DisplayName}
+	return loc(id, defaultOther, data)
+}
+
+func getCommands(loc func(id, defaultOther string, data map[string]any) string) []*model.AutocompleteData {
+	d := func(id, def string) string { return localizeCmd(loc, id, def) }
+
 	cmds := []*model.AutocompleteData{
-		model.NewAutocompleteData("connect", "", fmt.Sprintf("Connect to your %s account", config.Provider.DisplayName)),
-		model.NewAutocompleteData("disconnect", "", fmt.Sprintf("Disconnect from your %s account", config.Provider.DisplayName)),
+		model.NewAutocompleteData("connect", "", d("ycal.cmd.ac.connect", "Connect to your {{.DisplayName}} account")),
+		model.NewAutocompleteData("disconnect", "", d("ycal.cmd.ac.disconnect", "Disconnect from your {{.DisplayName}} account")),
 		{ // Summary
 			Trigger:  "summary",
-			HelpText: "View your events for today, or edit the settings for your daily summary.",
+			HelpText: d("ycal.cmd.ac.summary", "View your events for today, or edit the settings for your daily summary."),
 			SubCommands: []*model.AutocompleteData{
-				model.NewAutocompleteData("view", "", "View your daily summary."),
-				model.NewAutocompleteData("today", "", "Display today's events."),
-				model.NewAutocompleteData("tomorrow", "", "Display tomorrow's events."),
-				model.NewAutocompleteData("settings", "", "View your settings for the daily summary."),
-				model.NewAutocompleteData("time", "", "Set the time you would like to receive your daily summary."),
-				model.NewAutocompleteData("enable", "", "Enable your daily summary."),
-				model.NewAutocompleteData("disable", "", "Disable your daily summary."),
+				model.NewAutocompleteData("view", "", d("ycal.cmd.ac.summary_view", "View your daily summary.")),
+				model.NewAutocompleteData("today", "", d("ycal.cmd.ac.summary_today", "Display today's events.")),
+				model.NewAutocompleteData("tomorrow", "", d("ycal.cmd.ac.summary_tomorrow", "Display tomorrow's events.")),
+				model.NewAutocompleteData("settings", "", d("ycal.cmd.ac.summary_settings", "View your settings for the daily summary.")),
+				model.NewAutocompleteData("time", "", d("ycal.cmd.ac.summary_time", "Set the time you would like to receive your daily summary.")),
+				model.NewAutocompleteData("enable", "", d("ycal.cmd.ac.summary_enable", "Enable your daily summary.")),
+				model.NewAutocompleteData("disable", "", d("ycal.cmd.ac.summary_disable", "Disable your daily summary.")),
 			},
 		},
-		model.NewAutocompleteData("viewcal", "", "View your events for the upcoming 14 days, including today."),
+		model.NewAutocompleteData("viewcal", "", d("ycal.cmd.ac.viewcal", "View your events for the upcoming 14 days, including today.")),
 	}
 
 	if !config.Provider.Features.HideCreateEventFromCommand {
 		cmds = append(cmds, &model.AutocompleteData{
 			Trigger:  "event",
-			HelpText: "Manage events.",
+			HelpText: d("ycal.cmd.ac.event", "Manage events."),
 			SubCommands: []*model.AutocompleteData{
-				model.NewAutocompleteData("create", "", "Creates a new event."),
+				model.NewAutocompleteData("create", "", d("ycal.cmd.ac.event_create", "Creates a new event.")),
 			},
 		})
 	}
 
 	cmds = append(cmds,
-		model.NewAutocompleteData("today", "", "Display today's events."),
-		model.NewAutocompleteData("tomorrow", "", "Display tomorrow's events."),
-		model.NewAutocompleteData("settings", "", "Edit your user personal settings."),
-		model.NewAutocompleteData("info", "", "Read information about this version of the plugin."),
-		model.NewAutocompleteData("help", "", "Read help text for the commands"),
+		model.NewAutocompleteData("today", "", d("ycal.cmd.ac.today", "Display today's events.")),
+		model.NewAutocompleteData("tomorrow", "", d("ycal.cmd.ac.tomorrow", "Display tomorrow's events.")),
+		model.NewAutocompleteData("settings", "", d("ycal.cmd.ac.settings", "Edit your user personal settings.")),
+		model.NewAutocompleteData("info", "", d("ycal.cmd.ac.info", "Read information about this version of the plugin.")),
+		model.NewAutocompleteData("help", "", d("ycal.cmd.ac.help", "Read help text for the commands")),
 	)
 
 	return cmds
 }
 
-// Register should be called by the plugin to register all necessary commands
-func Register(client *pluginapilicense.Client) error {
-	cmds := getCommands()
+// Register should be called by the plugin to register all necessary commands.
+// bundle may be nil; English template defaults are used for autocomplete metadata.
+func Register(client *pluginapilicense.Client, bundle *mmi18n.Bundle) error {
+	loc := func(id, def string, data map[string]any) string {
+		return locale.Server(bundle, id, def, data)
+	}
+	cmds := getCommands(loc)
 
 	names := []string{}
 	for _, subCommand := range cmds {
@@ -95,7 +116,8 @@ func Register(client *pluginapilicense.Client) error {
 
 	hint := "[" + strings.Join(names[:4], "|") + "...]"
 
-	cmd := model.NewAutocompleteData(config.Provider.CommandTrigger, hint, fmt.Sprintf("Interact with your %s calendar.", config.Provider.DisplayName))
+	slashHelp := localizeCmd(loc, "ycal.cmd.register.slash_help", "Interact with your {{.DisplayName}} calendar.")
+	cmd := model.NewAutocompleteData(config.Provider.CommandTrigger, hint, slashHelp)
 	cmd.SubCommands = cmds
 
 	iconData, err := command.GetIconData(&client.System, fmt.Sprintf("assets/profile-%s.svg", config.Provider.Name))
@@ -106,7 +128,7 @@ func Register(client *pluginapilicense.Client) error {
 	return client.SlashCommand.Register(&model.Command{
 		Trigger:              config.Provider.CommandTrigger,
 		DisplayName:          config.Provider.DisplayName,
-		Description:          fmt.Sprintf("Interact with your %s calendar.", config.Provider.DisplayName),
+		Description:          slashHelp,
 		AutoComplete:         true,
 		AutoCompleteDesc:     strings.Join(names, ", "),
 		AutoCompleteHint:     "(subcommand)",
@@ -199,7 +221,7 @@ func (c *Command) requireConnectedUser(handle handleFunc) handleFunc {
 		}
 
 		if !connected {
-			return getNotConnectedText(c.Config.PluginURL), false, nil
+			return c.notConnectedText(), false, nil
 		}
 		return handle(parameters...)
 	}
@@ -212,7 +234,7 @@ func (c *Command) requireAdminUser(handle handleFunc) handleFunc {
 			return "", false, err
 		}
 		if !authorized {
-			return "Not authorized", false, nil
+			return c.T("ycal.cmd.not_authorized", "Not authorized", nil), false, nil
 		}
 
 		return handle(parameters...)

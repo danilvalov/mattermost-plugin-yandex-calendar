@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 )
@@ -32,6 +33,7 @@ func (tzOpt showTimezoneOption) Apply(event remote.Event, attachment *model.Slac
 	)
 }
 
+// ShowTimezoneOption sets attachment text to the event time range in the given timezone.
 func ShowTimezoneOption(timezone string) Option {
 	if timezone == "" {
 		timezone = "UTC"
@@ -42,9 +44,9 @@ func ShowTimezoneOption(timezone string) Option {
 	}
 }
 
-func RenderCalendarView(events []*remote.Event, timeZone string) (string, error) {
+func RenderCalendarView(events []*remote.Event, timeZone string, bundle *mmi18n.Bundle, mattermostUserID string) (string, error) {
 	if len(events) == 0 {
-		return "You have no upcoming events.", nil
+		return tr(bundle, mattermostUserID, "ycal.view.no_upcoming", "You have no upcoming events.", nil), nil
 	}
 
 	if timeZone != "" {
@@ -58,12 +60,13 @@ func RenderCalendarView(events []*remote.Event, timeZone string) (string, error)
 		return events[i].Start.Time().Before(events[j].Start.Time())
 	})
 
-	resp := "Times are shown in " + events[0].Start.TimeZone
+	resp := tr(bundle, mattermostUserID, "ycal.view.times_in_tz", "Times are shown in {{.TimeZone}}",
+		map[string]any{"TimeZone": events[0].Start.TimeZone})
 	for _, group := range groupEventsByDate(events) {
 		resp += "\n" + group[0].Start.Time().Format("Monday January 02, 2006") + "\n\n"
-		resp += renderTableHeader()
+		resp += renderTableHeader(bundle, mattermostUserID)
 		for _, e := range group {
-			eventString, err := renderEvent(e, true, timeZone)
+			eventString, err := renderEvent(e, true, timeZone, bundle, mattermostUserID)
 			if err != nil {
 				return "", err
 			}
@@ -74,9 +77,9 @@ func RenderCalendarView(events []*remote.Event, timeZone string) (string, error)
 	return resp, nil
 }
 
-func RenderDaySummary(events []*remote.Event, timezone string) (string, []*model.SlackAttachment, error) {
+func RenderDaySummary(events []*remote.Event, timezone string, bundle *mmi18n.Bundle, mattermostUserID string) (string, []*model.SlackAttachment, error) {
 	if len(events) == 0 {
-		return "You have no events for that day", nil, nil
+		return tr(bundle, mattermostUserID, "ycal.view.no_events_day", "You have no events for that day", nil), nil, nil
 	}
 
 	if timezone != "" {
@@ -86,7 +89,10 @@ func RenderDaySummary(events []*remote.Event, timezone string) (string, []*model
 		}
 	}
 
-	message := fmt.Sprintf("Agenda for %s.\nTimes are shown in %s", events[0].Start.Time().Format("Monday, 02 January"), events[0].Start.TimeZone)
+	dayLabel := events[0].Start.Time().Format("Monday, 02 January")
+	tzLabel := events[0].Start.TimeZone
+	message := tr(bundle, mattermostUserID, "ycal.view.agenda_header", "Agenda for {{.Day}}.\nTimes are shown in {{.TimeZone}}",
+		map[string]any{"Day": dayLabel, "TimeZone": tzLabel})
 
 	var attachments []*model.SlackAttachment
 	for _, event := range events {
@@ -95,7 +101,7 @@ func RenderDaySummary(events []*remote.Event, timezone string) (string, []*model
 		fields := []*model.SlackAttachmentField{}
 		if event.Location != nil && event.Location.DisplayName != "" {
 			fields = append(fields, &model.SlackAttachmentField{
-				Title: "Location",
+				Title: tr(bundle, mattermostUserID, "ycal.view.field.location", "Location", nil),
 				Value: MarkdownToHTMLEntities(event.Location.DisplayName),
 				Short: true,
 			})
@@ -113,9 +119,8 @@ func RenderDaySummary(events []*remote.Event, timezone string) (string, []*model
 	return message, attachments, nil
 }
 
-func renderTableHeader() string {
-	return `| Time | Subject |
-| :-- | :-- |`
+func renderTableHeader(bundle *mmi18n.Bundle, mattermostUserID string) string {
+	return tr(bundle, mattermostUserID, "ycal.view.table_header", "| Time | Subject |\n| :-- | :-- |", nil)
 }
 
 // MarkdownToHTMLEntities converts reserved Markdown characters to their HTML entity equivalents
@@ -153,21 +158,20 @@ func MarkdownToHTMLEntities(input string) string {
 	return builder.String()
 }
 
-func renderEvent(event *remote.Event, asRow bool, timeZone string) (string, error) {
+func renderEvent(event *remote.Event, asRow bool, timeZone string, bundle *mmi18n.Bundle, mattermostUserID string) (string, error) {
 	link, err := url.QueryUnescape(event.Weblink)
 	if err != nil {
 		return "", err
 	}
 
-	subject := EnsureSubject(event.Subject)
+	subject := EnsureSubject(bundle, mattermostUserID, event.Subject)
 
 	if event.IsAllDay {
-		format := "(All day event) [%s](%s)"
+		allDayLabel := tr(bundle, mattermostUserID, "ycal.view.all_day_label", "All day event", nil)
 		if asRow {
-			format = "| All day event | [%s](%s) |"
+			return fmt.Sprintf("| %s | [%s](%s) |", allDayLabel, MarkdownToHTMLEntities(subject), link), nil
 		}
-
-		return fmt.Sprintf(format, MarkdownToHTMLEntities(subject), link), nil
+		return fmt.Sprintf("(%s) [%s](%s)", allDayLabel, MarkdownToHTMLEntities(subject), link), nil
 	}
 
 	start := event.Start.In(timeZone).Time().Format(time.Kitchen)
@@ -181,24 +185,23 @@ func renderEvent(event *remote.Event, asRow bool, timeZone string) (string, erro
 	return fmt.Sprintf(format, start, end, MarkdownToHTMLEntities(subject), link), nil
 }
 
-func RenderEventAsAttachment(event *remote.Event, timezone string, options ...Option) (*model.SlackAttachment, error) {
+func RenderEventAsAttachment(event *remote.Event, timezone string, bundle *mmi18n.Bundle, mattermostUserID string, options ...Option) (*model.SlackAttachment, error) {
 	var actions []*model.PostAction
 	fields := []*model.SlackAttachmentField{}
 	var titleLink string
 
 	if event.Location != nil && event.Location.DisplayName != "" {
 		fields = append(fields, &model.SlackAttachmentField{
-			Title: "Location",
+			Title: tr(bundle, mattermostUserID, "ycal.view.field.location", "Location", nil),
 			Value: MarkdownToHTMLEntities(event.Location.DisplayName),
 			Short: true,
 		})
 	}
 
 	if event.Conference != nil {
-		// Use conference URL as title link if there's conference data present
 		titleLink = event.Conference.URL
 
-		title := "Meeting URL"
+		title := tr(bundle, mattermostUserID, "ycal.view.field.meeting_url", "Meeting URL", nil)
 		if event.Conference.Application != "" {
 			title = event.Conference.Application
 		}
@@ -210,13 +213,15 @@ func RenderEventAsAttachment(event *remote.Event, timezone string, options ...Op
 		})
 	}
 
+	subj := MarkdownToHTMLEntities(EnsureSubject(bundle, mattermostUserID, event.Subject))
+
 	attachment := &model.SlackAttachment{
-		Title:     MarkdownToHTMLEntities(event.Subject),
+		Title:     subj,
 		TitleLink: titleLink,
 		Text:      fmt.Sprintf("%s - %s", event.Start.In(timezone).Time().Format(time.Kitchen), event.End.In(timezone).Time().Format(time.Kitchen)),
 		Fields:    fields,
 		Actions:   actions,
-		Fallback:  fmt.Sprintf("%s\n%s - %s", MarkdownToHTMLEntities(event.Subject), event.Start.In(timezone).Time().Format(time.Kitchen), event.End.In(timezone).Time().Format(time.Kitchen)),
+		Fallback:  fmt.Sprintf("%s\n%s - %s", subj, event.Start.In(timezone).Time().Format(time.Kitchen), event.End.In(timezone).Time().Format(time.Kitchen)),
 	}
 
 	for _, opt := range options {
@@ -253,9 +258,9 @@ func groupEventsByDate(events []*remote.Event) [][]*remote.Event {
 	return result
 }
 
-func RenderUpcomingEvent(event *remote.Event, timeZone string) (string, error) {
-	message := "You have an upcoming event:\n"
-	eventString, err := renderEvent(event, false, timeZone)
+func RenderUpcomingEvent(event *remote.Event, timeZone string, bundle *mmi18n.Bundle, mattermostUserID string) (string, error) {
+	message := tr(bundle, mattermostUserID, "ycal.view.upcoming_event_prefix", "You have an upcoming event:\n", nil)
+	eventString, err := renderEvent(event, false, timeZone, bundle, mattermostUserID)
 	if err != nil {
 		return "", err
 	}
@@ -263,16 +268,17 @@ func RenderUpcomingEvent(event *remote.Event, timeZone string) (string, error) {
 	return message + eventString, nil
 }
 
-func EnsureSubject(s string) string {
-	if s == "" {
-		return "(No subject)"
+// EnsureSubject returns a display subject, localized when empty.
+func EnsureSubject(bundle *mmi18n.Bundle, mattermostUserID, s string) string {
+	if strings.TrimSpace(s) == "" {
+		return tr(bundle, mattermostUserID, "ycal.view.no_subject", "(No subject)", nil)
 	}
 
 	return s
 }
 
-func RenderUpcomingEventAsAttachment(event *remote.Event, timeZone string, options ...Option) (message string, attachment *model.SlackAttachment, err error) {
-	message = "Upcoming event:\n"
-	attachment, err = RenderEventAsAttachment(event, timeZone, options...)
+func RenderUpcomingEventAsAttachment(event *remote.Event, timeZone string, bundle *mmi18n.Bundle, mattermostUserID string, options ...Option) (message string, attachment *model.SlackAttachment, err error) {
+	message = tr(bundle, mattermostUserID, "ycal.view.upcoming_event_short", "Upcoming event:\n", nil)
+	attachment, err = RenderEventAsAttachment(event, timeZone, bundle, mattermostUserID, options...)
 	return message, attachment, err
 }

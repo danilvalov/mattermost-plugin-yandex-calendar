@@ -82,7 +82,9 @@ func (m *mscalendar) CreateEvent(user *User, event *remote.Event, mattermostUser
 		_, err := m.Store.LoadUser(mattermostUserID)
 		if err != nil {
 			if err.Error() == "not found" {
-				_, err = m.Poster.DM(mattermostUserID, "You have been invited to a %s event but have not linked your account.  Feel free to join us by connecting your %s account using `/%s connect`", m.Provider.DisplayName, m.Provider.DisplayName, m.Provider.CommandTrigger)
+				_, err = m.Poster.DM(mattermostUserID, m.Tr(mattermostUserID, "ycal.calendar.invite_unlinked",
+					"You have been invited to a {{.DisplayName}} event but have not linked your account. Feel free to join us by connecting your {{.DisplayName}} account using `/{{.Trigger}} connect`",
+					map[string]any{"DisplayName": m.Provider.DisplayName, "Trigger": m.Provider.CommandTrigger}))
 				if err != nil {
 					m.Logger.Warnf("CreateEvent error creating DM. err=%v", err)
 					continue

@@ -16,15 +16,17 @@ type boolSetting struct {
 	description string
 	id          string
 	dependsOn   string
+	tr          Translator
 }
 
-func NewBoolSetting(id string, title string, description string, dependsOn string, store SettingStore) Setting {
+func NewBoolSetting(id string, title string, description string, dependsOn string, store SettingStore, tr Translator) Setting {
 	return &boolSetting{
 		title:       title,
 		description: description,
 		id:          id,
 		dependsOn:   dependsOn,
 		store:       store,
+		tr:          tr,
 	}
 }
 
@@ -84,8 +86,11 @@ func (s *boolSetting) getActionStyle(actionValue, currentValue string) string {
 }
 
 func (s *boolSetting) GetSlackAttachments(userID, settingHandler string, disabled bool) (*model.SlackAttachment, error) {
-	title := fmt.Sprintf("Setting: %s", s.title)
-	currentValueMessage := "Disabled"
+	key := "ycal.settings." + s.id + "."
+	locTitle := s.tr.T(userID, key+"title", s.title, nil)
+	locDesc := s.tr.T(userID, key+"desc", s.description, nil)
+	title := s.tr.T(userID, "ycal.settings.ui.attachment_title", "Setting: {{.Name}}", map[string]any{"Name": locTitle})
+	currentValueMessage := s.tr.T(userID, "ycal.settings.ui.disabled", "Disabled", nil)
 
 	actions := []*model.PostAction{}
 	if !disabled {
@@ -94,15 +99,19 @@ func (s *boolSetting) GetSlackAttachments(userID, settingHandler string, disable
 			return nil, err
 		}
 
-		currentTextValue := "No"
-		if currentValue == "true" {
-			currentTextValue = "Yes"
+		curStr, _ := currentValue.(string)
+		currentTextValue := s.tr.T(userID, "ycal.settings.ui.no", "No", nil)
+		if curStr == "true" {
+			currentTextValue = s.tr.T(userID, "ycal.settings.ui.yes", "Yes", nil)
 		}
-		currentValueMessage = fmt.Sprintf("**Current value:** %s", currentTextValue)
+		currentValueMessage = s.tr.T(userID, "ycal.settings.ui.current_value", "**Current value:** {{.Value}}", map[string]any{"Value": currentTextValue})
+
+		yes := s.tr.T(userID, "ycal.settings.ui.yes", "Yes", nil)
+		no := s.tr.T(userID, "ycal.settings.ui.no", "No", nil)
 
 		actionTrue := model.PostAction{
-			Name:  "Yes",
-			Style: s.getActionStyle("true", currentValue.(string)),
+			Name:  yes,
+			Style: s.getActionStyle("true", curStr),
 			Integration: &model.PostActionIntegration{
 				URL: settingHandler,
 				Context: map[string]interface{}{
@@ -113,8 +122,8 @@ func (s *boolSetting) GetSlackAttachments(userID, settingHandler string, disable
 		}
 
 		actionFalse := model.PostAction{
-			Name:  "No",
-			Style: s.getActionStyle("false", currentValue.(string)),
+			Name:  no,
+			Style: s.getActionStyle("false", curStr),
 			Integration: &model.PostActionIntegration{
 				URL: settingHandler,
 				Context: map[string]interface{}{
@@ -126,12 +135,12 @@ func (s *boolSetting) GetSlackAttachments(userID, settingHandler string, disable
 		actions = []*model.PostAction{&actionTrue, &actionFalse}
 	}
 
-	text := fmt.Sprintf("%s\n%s", s.description, currentValueMessage)
+	text := fmt.Sprintf("%s\n%s", locDesc, currentValueMessage)
 	sa := model.SlackAttachment{
 		Title:    title,
 		Text:     text,
 		Actions:  actions,
-		Fallback: fmt.Sprintf("%s: %s", title, s.description),
+		Fallback: fmt.Sprintf("%s: %s", title, locDesc),
 	}
 
 	return &sa, nil

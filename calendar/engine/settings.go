@@ -4,7 +4,10 @@
 package engine
 
 import (
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
+
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/locale"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/settingspanel"
@@ -26,7 +29,17 @@ func (m *mscalendar) ClearSettingsPosts(userID string) {
 	}
 }
 
-func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingStore settingspanel.SettingStore, settingsHandler, pluginURL string, getCal func(userID string) Engine, providerFeatures config.ProviderFeatures) settingspanel.Panel {
+// NewSettingsPanel builds the interactive settings UI. i18n should return the current plugin i18n
+// bundle (may be nil before InitBundle); a getter is required so localization works if the panel
+// was created before OnActivate initialized translations.
+func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingStore settingspanel.SettingStore, settingsHandler, pluginURL string, getCal func(userID string) Engine, providerFeatures config.ProviderFeatures, i18n func() *mmi18n.Bundle) settingspanel.Panel {
+	tr := settingspanel.Translator(func(userID, id, def string, data map[string]any) string {
+		var b *mmi18n.Bundle
+		if i18n != nil {
+			b = i18n()
+		}
+		return locale.User(b, userID, id, def, data)
+	})
 	settings := []settingspanel.Setting{}
 	settings = append(settings, settingspanel.NewOptionSetting(
 		store.UpdateStatusFromOptionsSettingID,
@@ -36,6 +49,7 @@ func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingS
 		store.NotSetStatusOption,
 		[]string{store.AwayStatusOption, store.DNDStatusOption, store.NotSetStatusOption},
 		settingStore,
+		tr,
 	))
 	settings = append(settings, settingspanel.NewBoolSetting(
 		store.GetConfirmationSettingID,
@@ -43,6 +57,7 @@ func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingS
 		"Do you want to get a confirmation before automatically updating your status?",
 		store.UpdateStatusFromOptionsSettingID,
 		settingStore,
+		tr,
 	))
 	settings = append(settings, settingspanel.NewBoolSetting(
 		store.SetCustomStatusSettingID,
@@ -50,6 +65,7 @@ func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingS
 		"Do you want to set custom status automatically on Mattermost when you are in a meeting?",
 		"",
 		settingStore,
+		tr,
 	))
 	settings = append(settings, settingspanel.NewBoolSetting(
 		store.ReceiveRemindersSettingID,
@@ -57,13 +73,15 @@ func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingS
 		"Do you want to receive reminders for upcoming events?",
 		"",
 		settingStore,
+		tr,
 	))
 	if providerFeatures.EventNotifications {
-		settings = append(settings, NewNotificationsSetting(getCal))
+		settings = append(settings, NewNotificationsSetting(getCal, tr))
 	}
 	settings = append(settings, NewDailySummarySetting(
 		settingStore,
 		func(userID string) (string, error) { return getCal(userID).GetTimezone(NewUser(userID)) },
+		tr,
 	))
 	return settingspanel.NewSettingsPanel(settings, bot, bot, panelStore, settingsHandler, pluginURL)
 }

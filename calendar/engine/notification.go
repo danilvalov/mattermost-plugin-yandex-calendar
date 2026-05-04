@@ -181,7 +181,7 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 
 	if prior != nil {
 		var changed bool
-		changed, sa = processor.updatedEventSlackAttachment(n, prior.Remote, timezone)
+		changed, sa = processor.updatedEventSlackAttachment(creator.MattermostUserID, n, prior.Remote, timezone)
 		if !changed {
 			processor.Logger.With(bot.LogContext{
 				"MattermostUserID": creator.MattermostUserID,
@@ -193,7 +193,7 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 			return nil
 		}
 	} else {
-		sa = processor.newEventSlackAttachment(n, timezone)
+		sa = processor.newEventSlackAttachment(creator.MattermostUserID, n, timezone)
 		prior = &store.Event{}
 	}
 

@@ -1,0 +1,582 @@
+[
+    {
+        "id": "ycal.caldav.err.unauthorized_get",
+        "translation": "Нет доступа — откройте эту ссылку в браузере, будучи авторизованным в Mattermost."
+    },
+    {
+        "id": "ycal.caldav.err.session_start",
+        "translation": "Не удалось начать сессию подключения — попробуйте снова."
+    },
+    {
+        "id": "ycal.caldav.err.invalid_form",
+        "translation": "Некорректные данные формы."
+    },
+    {
+        "id": "ycal.caldav.err.unauthorized_post",
+        "translation": "Нет доступа — снова откройте страницу подключения из Mattermost (сессия не была передана при отправке формы)."
+    },
+    {
+        "id": "ycal.caldav.err.missing_credentials",
+        "translation": "Укажите адрес электронной почты и пароль приложения."
+    },
+    {
+        "id": "ycal.caldav.page_title",
+        "translation": "Подключение {{.DisplayName}}"
+    },
+    {
+        "id": "ycal.caldav.intro_html",
+        "translation": "Используйте <strong>пароль приложения</strong> из <a href=\"https://yandex.ru/security/app-passwords\" target=\"_blank\">настроек безопасности аккаунта</a> (не обычный пароль для входа)."
+    },
+    {
+        "id": "ycal.caldav.label_email",
+        "translation": "Электронная почта"
+    },
+    {
+        "id": "ycal.caldav.label_app_password",
+        "translation": "Пароль приложения"
+    },
+    {
+        "id": "ycal.caldav.button_submit",
+        "translation": "Подключить"
+    },
+    {
+        "id": "ycal.caldav.success_title",
+        "translation": "Подключено"
+    },
+    {
+        "id": "ycal.caldav.success_body",
+        "translation": "Подключено к {{.DisplayName}}. Можно закрыть это окно и вернуться в Mattermost."
+    },
+    {
+        "id": "ycal.cmd.not_connected",
+        "translation": "Похоже, ваш аккаунт Mattermost не связан с {{.DisplayName}}. [Нажмите здесь, чтобы подключить аккаунт]({{.ConnectURL}}) или выполните `/{{.Trigger}} connect`."
+    },
+    {
+        "id": "ycal.cmd.not_authorized",
+        "translation": "Нет доступа."
+    },
+    {
+        "id": "ycal.connect.already_connected",
+        "translation": "Ваш аккаунт Mattermost уже подключён к {{.DisplayName}} (`{{.Mail}}`). Чтобы подключить другой аккаунт, сначала выполните `/{{.Trigger}} disconnect`."
+    },
+    {
+        "id": "ycal.connect.error",
+        "translation": "При подключении произошла ошибка: {{.Err}}"
+    },
+    {
+        "id": "ycal.disconnect.success",
+        "translation": "Аккаунт успешно отключён."
+    },
+    {
+        "id": "ycal.subscribe.already",
+        "translation": "Вы уже подписаны на события."
+    },
+    {
+        "id": "ycal.subscribe.success",
+        "translation": "Вы подписаны на события."
+    },
+    {
+        "id": "ycal.subscribe.list_prefix",
+        "translation": "Подписки:"
+    },
+    {
+        "id": "ycal.unsubscribe.not_subscribed",
+        "translation": "Вы не подписаны на события."
+    },
+    {
+        "id": "ycal.unsubscribe.success",
+        "translation": "Подписка на события отменена."
+    },
+    {
+        "id": "ycal.availability.bad_syntax",
+        "translation": "Неверный синтаксис команды."
+    },
+    {
+        "id": "ycal.event.desktop_only",
+        "translation": "Создание событий доступно только в десктопном приложении."
+    },
+    {
+        "id": "ycal.viewcal.no_timezone",
+        "translation": "Ошибка: часовой пояс не найден."
+    },
+    {
+        "id": "ycal.err.user_inactive",
+        "translation": "Вы помечены как неактивные: срок действия токена обновления истёк. Отключите и снова подключите аккаунт."
+    },
+    {
+        "id": "ycal.daily.help",
+        "translation": "### Команды ежедневной сводки:\n`/{{.Trigger}} summary view` — показать сводку на сегодня\n`/{{.Trigger}} summary settings` — настройки ежедневной сводки\n`/{{.Trigger}} summary time 8:00AM` — задать время отправки сводки\n`/{{.Trigger}} summary enable` — включить сводку\n`/{{.Trigger}} summary disable` — выключить сводку"
+    },
+    {
+        "id": "ycal.daily.set_time_hint",
+        "translation": "Введите время, например:\n`/{{.Trigger}} summary time 8:00AM`"
+    },
+    {
+        "id": "ycal.daily.invalid",
+        "translation": "Неизвестная подкоманда. Попробуйте снова.\n\n{{.Help}}"
+    },
+    {
+        "id": "ycal.daily.configure_suffix",
+        "translation": "Возможно, нужно настроить ежедневную сводку командами ниже.\n{{.Help}}"
+    },
+    {
+        "id": "ycal.daily.need_time",
+        "translation": "Время ежедневной сводки ещё не задано.\n{{.Hint}}"
+    },
+    {
+        "id": "ycal.daily.disabled_suffix",
+        "translation": ", но сводка отключена. Включите: `/{{.Trigger}} summary enable`"
+    },
+    {
+        "id": "ycal.daily.state",
+        "translation": "Ежедневная сводка настроена на {{.PostTime}} ({{.Timezone}}){{.DisableHint}}."
+    },
+    {
+        "id": "ycal.info.version",
+        "translation": "Плагин Mattermost {{.DisplayName}}, версия {{.Version}}, [{{.HashShort}}](https://github.com/mattermost/{{.Repo}}/commit/{{.Hash}}), сборка {{.Date}}\n"
+    },
+    {
+        "id": "ycal.view.no_upcoming",
+        "translation": "У вас нет предстоящих событий."
+    },
+    {
+        "id": "ycal.view.times_in_tz",
+        "translation": "Время указано в часовом поясе: {{.TimeZone}}"
+    },
+    {
+        "id": "ycal.view.table_header",
+        "translation": "| Время | Тема |\n| :-- | :-- |"
+    },
+    {
+        "id": "ycal.view.no_subject",
+        "translation": "(Без темы)"
+    },
+    {
+        "id": "ycal.view.all_day_label",
+        "translation": "Событие на весь день"
+    },
+    {
+        "id": "ycal.view.no_events_day",
+        "translation": "На этот день нет событий."
+    },
+    {
+        "id": "ycal.view.agenda_header",
+        "translation": "Повестка на {{.Day}}.\nВремя в часовом поясе: {{.TimeZone}}"
+    },
+    {
+        "id": "ycal.view.field.location",
+        "translation": "Место"
+    },
+    {
+        "id": "ycal.view.field.meeting_url",
+        "translation": "Ссылка на встречу"
+    },
+    {
+        "id": "ycal.view.upcoming_event_prefix",
+        "translation": "У вас скоро событие:\n"
+    },
+    {
+        "id": "ycal.view.upcoming_event_short",
+        "translation": "Скоро событие:\n"
+    },
+    {
+        "id": "ycal.view.upcoming_channel_stub",
+        "translation": "Скоро событие"
+    },
+    {
+        "id": "ycal.daily.fetch_events_failed",
+        "translation": "Не удалось получить события календаря"
+    },
+    {
+        "id": "ycal.status.online",
+        "translation": "В сети"
+    },
+    {
+        "id": "ycal.status.away",
+        "translation": "Отошёл"
+    },
+    {
+        "id": "ycal.status.dnd",
+        "translation": "Не беспокоить"
+    },
+    {
+        "id": "ycal.status.offline",
+        "translation": "Не в сети"
+    },
+    {
+        "id": "ycal.status.event_will_start",
+        "translation": "Ваше событие [{{.Subject}}]({{.Link}}) скоро начнётся."
+    },
+    {
+        "id": "ycal.status.event_will_start_no_subject",
+        "translation": "[Событие без темы]({{.Link}}) скоро начнётся."
+    },
+    {
+        "id": "ycal.status.event_ongoing",
+        "translation": "Ваше событие [{{.Subject}}]({{.Link}}) уже идёт."
+    },
+    {
+        "id": "ycal.status.event_ongoing_no_subject",
+        "translation": "[Событие без темы]({{.Link}}) уже идёт."
+    },
+    {
+        "id": "ycal.status.no_upcoming_change_back",
+        "translation": "У вас нет предстоящих событий.\n Вернуть статус «{{.Status}}»?"
+    },
+    {
+        "id": "ycal.status.change_status_prompt",
+        "translation": "Переключить статус на «{{.Status}}»?"
+    },
+    {
+        "id": "ycal.status.change_title",
+        "translation": "Смена статуса"
+    },
+    {
+        "id": "ycal.common.yes",
+        "translation": "Да"
+    },
+    {
+        "id": "ycal.common.no",
+        "translation": "Нет"
+    },
+    {
+        "id": "ycal.notify.field.subject",
+        "translation": "Тема"
+    },
+    {
+        "id": "ycal.notify.field.body_preview",
+        "translation": "Текст"
+    },
+    {
+        "id": "ycal.notify.field.importance",
+        "translation": "Важность"
+    },
+    {
+        "id": "ycal.notify.field.duration",
+        "translation": "Длительность"
+    },
+    {
+        "id": "ycal.notify.field.when",
+        "translation": "Когда"
+    },
+    {
+        "id": "ycal.notify.field.location",
+        "translation": "Место"
+    },
+    {
+        "id": "ycal.notify.field.attendees",
+        "translation": "Участники"
+    },
+    {
+        "id": "ycal.notify.field.organizer",
+        "translation": "Организатор"
+    },
+    {
+        "id": "ycal.notify.field.response_status",
+        "translation": "Ответ"
+    },
+    {
+        "id": "ycal.notify.title_new",
+        "translation": "(новое) {{.Title}}"
+    },
+    {
+        "id": "ycal.notify.title_updated",
+        "translation": "(изменено) {{.Title}}"
+    },
+    {
+        "id": "ycal.notify.response_control",
+        "translation": "Ответ"
+    },
+    {
+        "id": "ycal.notify.option.not_responded",
+        "translation": "Не ответил"
+    },
+    {
+        "id": "ycal.notify.option.yes",
+        "translation": "Да"
+    },
+    {
+        "id": "ycal.notify.option.no",
+        "translation": "Нет"
+    },
+    {
+        "id": "ycal.notify.option.maybe",
+        "translation": "Возможно"
+    },
+    {
+        "id": "ycal.notify.not_defined",
+        "translation": "Не задано"
+    },
+    {
+        "id": "ycal.notify.none",
+        "translation": "Нет"
+    },
+    {
+        "id": "ycal.notify.na",
+        "translation": "н/д"
+    },
+    {
+        "id": "ycal.notify.duration_days",
+        "translation": "{{.Count}} дн."
+    },
+    {
+        "id": "ycal.notify.duration_allday",
+        "translation": "весь день"
+    },
+    {
+        "id": "ycal.notify.duration_one_hour",
+        "translation": "один час"
+    },
+    {
+        "id": "ycal.notify.duration_hours",
+        "translation": "{{.Count}} ч"
+    },
+    {
+        "id": "ycal.notify.duration_minutes",
+        "translation": "{{.Count}} мин"
+    },
+    {
+        "id": "ycal.calendar.invite_unlinked",
+        "translation": "Вас пригласили на событие {{.DisplayName}}, но аккаунт не привязан. Подключите аккаунт {{.DisplayName}} командой `/{{.Trigger}} connect`"
+    },
+    {
+        "id": "ycal.oauth.remote_already_connected",
+        "translation": "Аккаунт {{.DisplayName}} `{{.Mail}}` уже сопоставлен с Mattermost `{{.Username}}`. Выполните `/{{.Trigger}} disconnect`, будучи авторизованным под этим пользователем Mattermost"
+    },
+    {
+        "id": "ycal.oauth.remote_already_disabled",
+        "translation": "Аккаунт {{.DisplayName}} `{{.Mail}}` уже сопоставлен с Mattermost, но тот пользователь деактивирован. Включите его и выполните `/{{.Trigger}} disconnect` под другим аккаунтом и повторите попытку"
+    },
+    {
+        "id": "ycal.oauth.remote_already_not_found",
+        "translation": "Аккаунт {{.DisplayName}} `{{.Mail}}` уже сопоставлен с Mattermost, но пользователь не найден"
+    },
+    {
+        "id": "ycal.welcome.connect_title",
+        "translation": "Подключение"
+    },
+    {
+        "id": "ycal.welcome.password_auth",
+        "translation": "Добро пожаловать в плагин {{.DisplayName}}. [Откройте страницу подключения]({{.URL}}/caldav/connect) и введите почту и пароль приложения."
+    },
+    {
+        "id": "ycal.welcome.oauth",
+        "translation": "Добро пожаловать в плагин {{.DisplayName}}. [Нажмите здесь, чтобы связать аккаунт.]({{.URL}}/oauth2/connect)"
+    },
+    {
+        "id": "ycal.welcome.connected",
+        "translation": ":tada: Поздравляем! Аккаунт {{.DisplayName}} (*{{.Login}}*) подключён к Mattermost."
+    },
+    {
+        "id": "ycal.welcome.settings_hint",
+        "translation": "Настройки можно изменить в любой момент командой `/{{.Trigger}} settings`"
+    },
+    {
+        "id": "ycal.api.event_link_failed",
+        "translation": "Не удалось привязать событие **{{.Subject}}** к каналу. Обратитесь к администратору."
+    },
+    {
+        "id": "ycal.api.event_linked_channel",
+        "translation": "Событие **{{.Subject}}** привязано к этому каналу пользователем @{{.User}}"
+    },
+    {
+        "id": "ycal.api.event_created_with_subject",
+        "translation": "Событие: **{{.Subject}}** успешно создано."
+    },
+    {
+        "id": "ycal.api.event_created",
+        "translation": "Событие успешно создано."
+    },
+    {
+        "id": "ycal.status.custom_in_meeting",
+        "translation": "На встрече"
+    },
+    {
+        "id": "ycal.cmd.register.slash_help",
+        "translation": "Работа с календарём {{.DisplayName}}."
+    },
+    {
+        "id": "ycal.cmd.ac.connect",
+        "translation": "Подключить аккаунт {{.DisplayName}}"
+    },
+    {
+        "id": "ycal.cmd.ac.disconnect",
+        "translation": "Отключить аккаунт {{.DisplayName}}"
+    },
+    {
+        "id": "ycal.cmd.ac.summary",
+        "translation": "События на сегодня или настройка ежедневной сводки"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_view",
+        "translation": "Показать текст ежедневной сводки"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_today",
+        "translation": "События на сегодня"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_tomorrow",
+        "translation": "События на завтра"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_settings",
+        "translation": "Настройки ежедневной сводки"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_time",
+        "translation": "Время отправки ежедневной сводки"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_enable",
+        "translation": "Включить ежедневную сводку"
+    },
+    {
+        "id": "ycal.cmd.ac.summary_disable",
+        "translation": "Выключить ежедневную сводку"
+    },
+    {
+        "id": "ycal.cmd.ac.viewcal",
+        "translation": "События на ближайшие 14 дней, включая сегодня"
+    },
+    {
+        "id": "ycal.cmd.ac.event",
+        "translation": "Управление событиями"
+    },
+    {
+        "id": "ycal.cmd.ac.event_create",
+        "translation": "Создать событие"
+    },
+    {
+        "id": "ycal.cmd.ac.today",
+        "translation": "События на сегодня"
+    },
+    {
+        "id": "ycal.cmd.ac.tomorrow",
+        "translation": "События на завтра"
+    },
+    {
+        "id": "ycal.cmd.ac.settings",
+        "translation": "Личные настройки интеграции"
+    },
+    {
+        "id": "ycal.cmd.ac.info",
+        "translation": "Информация о версии плагина"
+    },
+    {
+        "id": "ycal.cmd.ac.help",
+        "translation": "Справка по командам"
+    },
+    {
+        "id": "ycal.settings.ui.attachment_title",
+        "translation": "Настройка: {{.Name}}"
+    },
+    {
+        "id": "ycal.settings.ui.disabled",
+        "translation": "Отключено"
+    },
+    {
+        "id": "ycal.settings.ui.current_value",
+        "translation": "**Текущее значение:** {{.Value}}"
+    },
+    {
+        "id": "ycal.settings.ui.select_option",
+        "translation": "Выберите вариант:"
+    },
+    {
+        "id": "ycal.settings.ui.yes",
+        "translation": "Да"
+    },
+    {
+        "id": "ycal.settings.ui.no",
+        "translation": "Нет"
+    },
+    {
+        "id": "ycal.settings.status.opt.away",
+        "translation": "Отошёл"
+    },
+    {
+        "id": "ycal.settings.status.opt.dnd",
+        "translation": "Не беспокоить"
+    },
+    {
+        "id": "ycal.settings.status.opt.notset",
+        "translation": "Не менять статус"
+    },
+    {
+        "id": "ycal.settings.update_status_from_options.title",
+        "translation": "Обновление статуса"
+    },
+    {
+        "id": "ycal.settings.update_status_from_options.desc",
+        "translation": "Обновлять ли статус в Mattermost, пока вы на встрече?"
+    },
+    {
+        "id": "ycal.settings.get_confirmation.title",
+        "translation": "Подтверждение"
+    },
+    {
+        "id": "ycal.settings.get_confirmation.desc",
+        "translation": "Запрашивать подтверждение перед автоматическим изменением статуса?"
+    },
+    {
+        "id": "ycal.settings.set_custom_status.title",
+        "translation": "Пользовательский статус"
+    },
+    {
+        "id": "ycal.settings.set_custom_status.desc",
+        "translation": "Автоматически выставлять пользовательский статус в Mattermost на время встречи?"
+    },
+    {
+        "id": "ycal.settings.get_reminders.title",
+        "translation": "Напоминания"
+    },
+    {
+        "id": "ycal.settings.get_reminders.desc",
+        "translation": "Получать напоминания о предстоящих событиях?"
+    },
+    {
+        "id": "ycal.settings.new_or_updated_event_setting.title",
+        "translation": "Уведомления о новых событиях"
+    },
+    {
+        "id": "ycal.settings.new_or_updated_event_setting.desc",
+        "translation": "Подписаться на новые события и получать сообщение при их создании?"
+    },
+    {
+        "id": "ycal.settings.summary_setting.title",
+        "translation": "Ежедневная сводка"
+    },
+    {
+        "id": "ycal.settings.summary_setting.desc",
+        "translation": "Когда отправлять ежедневную сводку?\nПри изменении настройки часовой пояс подставится из вашего календаря."
+    },
+    {
+        "id": "ycal.settings.daily.label_hour",
+        "translation": "Час:"
+    },
+    {
+        "id": "ycal.settings.daily.label_minute",
+        "translation": "Мин:"
+    },
+    {
+        "id": "ycal.settings.daily.label_ampm",
+        "translation": "AM/PM:"
+    },
+    {
+        "id": "ycal.settings.daily.enable",
+        "translation": "Включить"
+    },
+    {
+        "id": "ycal.settings.daily.disable",
+        "translation": "Выключить"
+    },
+    {
+        "id": "ycal.settings.daily.am",
+        "translation": "AM"
+    },
+    {
+        "id": "ycal.settings.daily.pm",
+        "translation": "PM"
+    }
+]

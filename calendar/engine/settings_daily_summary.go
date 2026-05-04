@@ -24,9 +24,10 @@ type dailySummarySetting struct {
 	optionsH    []string
 	optionsM    []string
 	optionsAPM  []string
+	tr          settingspanel.Translator
 }
 
-func NewDailySummarySetting(inStore settingspanel.SettingStore, getTimezone func(userID string) (string, error)) settingspanel.Setting {
+func NewDailySummarySetting(inStore settingspanel.SettingStore, getTimezone func(userID string) (string, error), tr settingspanel.Translator) settingspanel.Setting {
 	os := &dailySummarySetting{
 		title:       "Daily Summary",
 		description: "When do you want to receive the daily summary?\n If you update this setting, it will automatically update to your the timezone currently set on your calendar.",
@@ -34,6 +35,7 @@ func NewDailySummarySetting(inStore settingspanel.SettingStore, getTimezone func
 		dependsOn:   "",
 		store:       inStore,
 		getTimezone: getTimezone,
+		tr:          tr,
 	}
 	os.optionsH = []string{"12"}
 	for i := 1; i < 12; i++ {
@@ -94,13 +96,16 @@ func (s *dailySummarySetting) GetDependency() string {
 }
 
 func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string, disabled bool) (*model.SlackAttachment, error) {
-	title := fmt.Sprintf("Setting: %s", s.title)
-	currentValueMessage := "Disabled"
+	key := "ycal.settings." + s.id + "."
+	locTitle := s.tr.T(userID, key+"title", s.title, nil)
+	locDesc := s.tr.T(userID, key+"desc", s.description, nil)
+	title := s.tr.T(userID, "ycal.settings.ui.attachment_title", "Setting: {{.Name}}", map[string]any{"Name": locTitle})
+	currentValueMessage := s.tr.T(userID, "ycal.settings.ui.disabled", "Disabled", nil)
 
 	actions := []*model.PostAction{}
 
 	if disabled {
-		text := fmt.Sprintf("%s\n%s", s.description, currentValueMessage)
+		text := fmt.Sprintf("%s\n%s", locDesc, currentValueMessage)
 		sa := model.SlackAttachment{
 			Title:    title,
 			Text:     text,
@@ -138,7 +143,7 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 	fullTime = fullTime + " " + timezone
 
 	actionOptionsH := model.PostAction{
-		Name: "H:",
+		Name: s.tr.T(userID, "ycal.settings.daily.label_hour", "H:", nil),
 		Integration: &model.PostActionIntegration{
 			URL: settingHandler,
 			Context: map[string]interface{}{
@@ -151,7 +156,7 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 	}
 
 	actionOptionsM := model.PostAction{
-		Name: "M:",
+		Name: s.tr.T(userID, "ycal.settings.daily.label_minute", "M:", nil),
 		Integration: &model.PostActionIntegration{
 			URL: settingHandler,
 			Context: map[string]interface{}{
@@ -164,7 +169,7 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 	}
 
 	actionOptionsAPM := model.PostAction{
-		Name: "AM/PM:",
+		Name: s.tr.T(userID, "ycal.settings.daily.label_ampm", "AM/PM:", nil),
 		Integration: &model.PostActionIntegration{
 			URL: settingHandler,
 			Context: map[string]interface{}{
@@ -172,7 +177,7 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 			},
 		},
 		Type:          "select",
-		Options:       s.makeAPMOptions(currentH, currentM, timezone),
+		Options:       s.makeAPMOptions(userID, currentH, currentM, timezone),
 		DefaultOption: fullTime,
 	}
 
@@ -180,10 +185,10 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 		actions = []*model.PostAction{&actionOptionsH, &actionOptionsM, &actionOptionsAPM}
 	}
 
-	buttonText := "Enable"
+	buttonText := s.tr.T(userID, "ycal.settings.daily.enable", "Enable", nil)
 	enable := "true"
 	if currentEnable {
-		buttonText = "Disable"
+		buttonText = s.tr.T(userID, "ycal.settings.daily.disable", "Disable", nil)
 		enable = "false"
 	}
 	actionToggle := model.PostAction{
@@ -201,9 +206,9 @@ func (s *dailySummarySetting) GetSlackAttachments(userID, settingHandler string,
 
 	sa := model.SlackAttachment{
 		Title:    title,
-		Text:     s.description,
+		Text:     locDesc,
 		Actions:  actions,
-		Fallback: fmt.Sprintf("%s: %s", title, s.description),
+		Fallback: fmt.Sprintf("%s: %s", title, locDesc),
 	}
 	return &sa, nil
 }
@@ -234,12 +239,19 @@ func (s *dailySummarySetting) makeMOptions(hour, apm, timezone string) []*model.
 	return out
 }
 
-func (s *dailySummarySetting) makeAPMOptions(hour, minute, timezone string) []*model.PostActionOptions {
+func (s *dailySummarySetting) makeAPMOptions(userID, hour, minute, timezone string) []*model.PostActionOptions {
 	out := []*model.PostActionOptions{}
 
 	for _, o := range s.optionsAPM {
+		display := o
+		switch o {
+		case "AM":
+			display = s.tr.T(userID, "ycal.settings.daily.am", o, nil)
+		case "PM":
+			display = s.tr.T(userID, "ycal.settings.daily.pm", o, nil)
+		}
 		out = append(out, &model.PostActionOptions{
-			Text:  o,
+			Text:  display,
 			Value: fmt.Sprintf("%s:%s%s %s", hour, minute, o, timezone),
 		})
 	}

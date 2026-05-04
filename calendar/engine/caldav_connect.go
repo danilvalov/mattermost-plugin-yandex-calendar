@@ -54,18 +54,24 @@ func (app *oauth2App) completeCalDAVConnect(authedUserID, email, appPassword str
 	if err == nil {
 		user, userErr := app.PluginAPI.GetMattermostUser(uid)
 		if userErr == nil {
-			msg := fmt.Sprintf(RemoteUserAlreadyConnected, config.Provider.DisplayName, me.Mail, user.Username, config.Provider.CommandTrigger)
+			msg := app.Tr(authedUserID, "ycal.oauth.remote_already_connected",
+				"{{.DisplayName}} account `{{.Mail}}` is already mapped to Mattermost account `{{.Username}}`. Please run `/{{.Trigger}} disconnect`, while logged in as the Mattermost account",
+				map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail, "Username": user.Username, "Trigger": config.Provider.CommandTrigger})
 			app.Poster.DM(authedUserID, msg)
 			return errors.New(msg)
 		}
 
 		if userErr == store.ErrNotFound {
-			msg := fmt.Sprintf(RemoteUserAlreadyConnectedDisabled, config.Provider.DisplayName, me.Mail, config.Provider.CommandTrigger)
+			msg := app.Tr(authedUserID, "ycal.oauth.remote_already_disabled",
+				"{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the account is deactivated. Please enable it and run `/{{.Trigger}} disconnect`,  while logged in as the other Mattermost account, and try again",
+				map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail, "Trigger": config.Provider.CommandTrigger})
 			app.Poster.DM(authedUserID, msg)
 			return errors.New(msg)
 		}
 
-		msg := fmt.Sprintf(RemoteUserAlreadyConnectedNotFound, config.Provider.DisplayName, me.Mail)
+		msg := app.Tr(authedUserID, "ycal.oauth.remote_already_not_found",
+			"{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the Mattermost user could not be found",
+			map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail})
 		app.Poster.DM(authedUserID, msg)
 		return errors.New(msg)
 	}

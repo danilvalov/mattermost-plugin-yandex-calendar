@@ -4,20 +4,20 @@
 package command
 
 import (
-	"fmt"
 	"net/url"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 )
 
 func (c *Command) info(_ ...string) (string, bool, error) {
-	resp := fmt.Sprintf("Mattermost %s plugin version: %s, "+
-		"[%s](https://github.com/mattermost/%s/commit/%s), built %s\n",
-		c.Config.Provider.DisplayName,
-		c.Config.PluginVersion,
-		c.Config.BuildHashShort,
-		url.PathEscape(config.Provider.Repository),
-		url.PathEscape(c.Config.BuildHash),
-		c.Config.BuildDate)
-	return resp, false, nil
+	return c.T("ycal.info.version",
+		"Mattermost {{.DisplayName}} plugin version: {{.Version}}, [{{.HashShort}}](https://github.com/mattermost/{{.Repo}}/commit/{{.Hash}}), built {{.Date}}\n",
+		map[string]any{
+			"DisplayName": c.Config.Provider.DisplayName,
+			"Version":     c.Config.PluginVersion,
+			"HashShort":   c.Config.BuildHashShort,
+			"Repo":        url.PathEscape(config.Provider.Repository),
+			"Hash":        url.PathEscape(c.Config.BuildHash),
+			"Date":        c.Config.BuildDate,
+		}), false, nil
 }

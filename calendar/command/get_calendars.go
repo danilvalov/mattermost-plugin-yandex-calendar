@@ -14,7 +14,7 @@ func (c *Command) showCalendars(_ ...string) (string, bool, error) {
 	resp, err := c.Engine.GetCalendars(c.user())
 	if err != nil {
 		if strings.Contains(err.Error(), store.ErrorRefreshTokenNotSet) || strings.Contains(err.Error(), store.ErrorUserInactive) {
-			return store.ErrorUserInactive, false, nil
+			return c.T("ycal.err.user_inactive", store.ErrorUserInactive, nil), false, nil
 		}
 
 		return "", false, err

@@ -5,6 +5,7 @@ package engine
 
 import (
 	"github.com/mattermost/mattermost/server/public/model"
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
@@ -37,6 +38,7 @@ type Dependencies struct {
 	Welcomer              Welcomer
 	Tracker               tracker.Tracker
 	NotificationProcessor NotificationProcessor
+	I18n                  *mmi18n.Bundle
 }
 
 type PluginAPI interface {

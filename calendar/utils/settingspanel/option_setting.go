@@ -18,9 +18,10 @@ type optionSetting struct {
 	dependsOn     string
 	defaultOption string
 	options       []string
+	tr            Translator
 }
 
-func NewOptionSetting(id, title, description, dependsOn, defaultOption string, options []string, store SettingStore) Setting {
+func NewOptionSetting(id, title, description, dependsOn, defaultOption string, options []string, store SettingStore, tr Translator) Setting {
 	return &optionSetting{
 		title:         title,
 		description:   description,
@@ -29,6 +30,7 @@ func NewOptionSetting(id, title, description, dependsOn, defaultOption string, o
 		options:       options,
 		store:         store,
 		defaultOption: defaultOption,
+		tr:            tr,
 	}
 }
 
@@ -70,9 +72,36 @@ func (s *optionSetting) GetDependency() string {
 	return s.dependsOn
 }
 
+func (s *optionSetting) optionDisplayLabel(userID, value string) string {
+	switch value {
+	case "Away":
+		return s.tr.T(userID, "ycal.settings.status.opt.away", value, nil)
+	case "Do Not Disturb":
+		return s.tr.T(userID, "ycal.settings.status.opt.dnd", value, nil)
+	case "Don't set status for me":
+		return s.tr.T(userID, "ycal.settings.status.opt.notset", value, nil)
+	default:
+		return value
+	}
+}
+
+func (s *optionSetting) stringsToLocalizedOptions(userID string) []*model.PostActionOptions {
+	out := []*model.PostActionOptions{}
+	for _, o := range s.options {
+		out = append(out, &model.PostActionOptions{
+			Text:  s.optionDisplayLabel(userID, o),
+			Value: o,
+		})
+	}
+	return out
+}
+
 func (s *optionSetting) GetSlackAttachments(userID, settingHandler string, disabled bool) (*model.SlackAttachment, error) {
-	title := fmt.Sprintf("Setting: %s", s.title)
-	currentValueMessage := "Disabled"
+	key := "ycal.settings." + s.id + "."
+	locTitle := s.tr.T(userID, key+"title", s.title, nil)
+	locDesc := s.tr.T(userID, key+"desc", s.description, nil)
+	title := s.tr.T(userID, "ycal.settings.ui.attachment_title", "Setting: {{.Name}}", map[string]any{"Name": locTitle})
+	currentValueMessage := s.tr.T(userID, "ycal.settings.ui.disabled", "Disabled", nil)
 
 	actions := []*model.PostAction{}
 	if !disabled {
@@ -85,10 +114,12 @@ func (s *optionSetting) GetSlackAttachments(userID, settingHandler string, disab
 			currentTextValue = s.defaultOption
 		}
 
-		currentValueMessage = fmt.Sprintf("**Current value:** %s", currentTextValue)
+		curStr, _ := currentTextValue.(string)
+		displayVal := s.optionDisplayLabel(userID, curStr)
+		currentValueMessage = s.tr.T(userID, "ycal.settings.ui.current_value", "**Current value:** {{.Value}}", map[string]any{"Value": displayVal})
 
 		actionOptions := model.PostAction{
-			Name: "Select an option:",
+			Name: s.tr.T(userID, "ycal.settings.ui.select_option", "Select an option:", nil),
 			Integration: &model.PostActionIntegration{
 				URL: settingHandler + "?" + s.id + "=true",
 				Context: map[string]interface{}{
@@ -96,13 +127,13 @@ func (s *optionSetting) GetSlackAttachments(userID, settingHandler string, disab
 				},
 			},
 			Type:    "select",
-			Options: stringsToOptions(s.options),
+			Options: s.stringsToLocalizedOptions(userID),
 		}
 
 		actions = []*model.PostAction{&actionOptions}
 	}
 
-	text := fmt.Sprintf("%s\n%s", s.description, currentValueMessage)
+	text := fmt.Sprintf("%s\n%s", locDesc, currentValueMessage)
 	sa := model.SlackAttachment{
 		Title:    title,
 		Text:     text,

@@ -33,12 +33,6 @@ type mscBot struct {
 	pluginURL string
 }
 
-const (
-	WelcomeMessage = `Welcome to the %s plugin. [Click here to link your account.](%s/oauth2/connect)`
-	// WelcomeMessagePasswordAuth is used when the provider uses app passwords (CalDAV) instead of OAuth.
-	WelcomeMessagePasswordAuth = `Welcome to the %s plugin. [Open the connect page](%s/caldav/connect) to enter your account email and app password.`
-)
-
 func (m *mscalendar) Welcome(userID string) error {
 	return m.Welcomer.Welcome(userID)
 }
@@ -66,7 +60,7 @@ func NewMSCalendarBot(bot bot.Bot, env Env, pluginURL string) Bot {
 func (bot *mscBot) Welcome(userID string) error {
 	bot.cleanWelcomePost(userID)
 
-	postID, err := bot.DMWithAttachments(userID, bot.newConnectAttachment())
+	postID, err := bot.DMWithAttachments(userID, bot.newConnectAttachment(userID))
 	if err != nil {
 		return err
 	}
@@ -88,7 +82,7 @@ func (bot *mscBot) AfterSuccessfullyConnect(userID, userLogin string) error {
 		post := &model.Post{
 			Id: postID,
 		}
-		model.ParseSlackAttachment(post, []*model.SlackAttachment{bot.newConnectedAttachment(userLogin)})
+		model.ParseSlackAttachment(post, []*model.SlackAttachment{bot.newConnectedAttachment(userID, userLogin)})
 		bot.UpdatePost(post)
 	}
 
@@ -116,13 +110,17 @@ func (bot *mscBot) WelcomeFlowEnd(userID string) {
 	bot.notifySettings(userID)
 }
 
-func (bot *mscBot) newConnectAttachment() *model.SlackAttachment {
-	title := "Connect"
+func (bot *mscBot) newConnectAttachment(mattermostUserID string) *model.SlackAttachment {
+	title := bot.Tr(mattermostUserID, "ycal.welcome.connect_title", "Connect", nil)
 	var text string
 	if bot.Provider.Features.PasswordAuth {
-		text = fmt.Sprintf(WelcomeMessagePasswordAuth, bot.Provider.DisplayName, bot.pluginURL)
+		text = bot.Tr(mattermostUserID, "ycal.welcome.password_auth",
+			"Welcome to the {{.DisplayName}} plugin. [Open the connect page]({{.URL}}/caldav/connect) to enter your account email and app password.",
+			map[string]any{"DisplayName": bot.Provider.DisplayName, "URL": bot.pluginURL})
 	} else {
-		text = fmt.Sprintf(WelcomeMessage, bot.Provider.DisplayName, bot.pluginURL)
+		text = bot.Tr(mattermostUserID, "ycal.welcome.oauth",
+			"Welcome to the {{.DisplayName}} plugin. [Click here to link your account.]({{.URL}}/oauth2/connect)",
+			map[string]any{"DisplayName": bot.Provider.DisplayName, "URL": bot.pluginURL})
 	}
 	sa := model.SlackAttachment{
 		Title:    title,
@@ -133,9 +131,11 @@ func (bot *mscBot) newConnectAttachment() *model.SlackAttachment {
 	return &sa
 }
 
-func (bot *mscBot) newConnectedAttachment(userLogin string) *model.SlackAttachment {
-	title := "Connect"
-	text := ":tada: Congratulations! Your " + bot.Provider.DisplayName + " account (*" + userLogin + "*) has been connected to Mattermost."
+func (bot *mscBot) newConnectedAttachment(mattermostUserID, userLogin string) *model.SlackAttachment {
+	title := bot.Tr(mattermostUserID, "ycal.welcome.connect_title", "Connect", nil)
+	text := bot.Tr(mattermostUserID, "ycal.welcome.connected",
+		":tada: Congratulations! Your {{.DisplayName}} account (*{{.Login}}*) has been connected to Mattermost.",
+		map[string]any{"DisplayName": bot.Provider.DisplayName, "Login": userLogin})
 	return &model.SlackAttachment{
 		Title:    title,
 		Text:     text,
@@ -144,7 +144,9 @@ func (bot *mscBot) newConnectedAttachment(userLogin string) *model.SlackAttachme
 }
 
 func (bot *mscBot) notifySettings(userID string) error {
-	_, err := bot.DM(userID, "Feel free to change these settings anytime by typing `/%s settings`", config.Provider.CommandTrigger)
+	_, err := bot.DM(userID, bot.Tr(userID, "ycal.welcome.settings_hint",
+		"Feel free to change these settings anytime by typing `/{{.Trigger}} settings`",
+		map[string]any{"Trigger": config.Provider.CommandTrigger}))
 	if err != nil {
 		return err
 	}

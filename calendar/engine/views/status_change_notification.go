@@ -10,74 +10,94 @@ import (
 	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 )
 
-var prettyStatuses = map[string]string{
-	model.StatusOnline:  "Online",
-	model.StatusAway:    "Away",
-	model.StatusDnd:     "Do Not Disturb",
-	model.StatusOffline: "Offline",
+func prettyStatus(bundle *mmi18n.Bundle, mattermostUserID, status string) string {
+	switch status {
+	case model.StatusOnline:
+		return tr(bundle, mattermostUserID, "ycal.status.online", "Online", nil)
+	case model.StatusAway:
+		return tr(bundle, mattermostUserID, "ycal.status.away", "Away", nil)
+	case model.StatusDnd:
+		return tr(bundle, mattermostUserID, "ycal.status.dnd", "Do Not Disturb", nil)
+	case model.StatusOffline:
+		return tr(bundle, mattermostUserID, "ycal.status.offline", "Offline", nil)
+	default:
+		return status
+	}
 }
 
-func RenderStatusChangeNotificationView(events []*remote.Event, status, url string) *model.SlackAttachment {
+func RenderStatusChangeNotificationView(events []*remote.Event, status, url string, bundle *mmi18n.Bundle, mattermostUserID string) *model.SlackAttachment {
 	for _, e := range events {
 		if e.Start.Time().After(time.Now()) {
-			return statusChangeAttachments(e, status, url)
+			return statusChangeAttachments(e, status, url, bundle, mattermostUserID)
 		}
 	}
 
 	nEvents := len(events)
 	if nEvents > 0 && status == model.StatusDnd {
-		return statusChangeAttachments(events[nEvents-1], status, url)
+		return statusChangeAttachments(events[nEvents-1], status, url, bundle, mattermostUserID)
 	}
 
-	return statusChangeAttachments(nil, status, url)
+	return statusChangeAttachments(nil, status, url, bundle, mattermostUserID)
 }
 
-func RenderEventWillStartLine(subject, weblink string, startTime time.Time) string {
+func RenderEventWillStartLine(bundle *mmi18n.Bundle, mattermostUserID, subject, weblink string, startTime time.Time) string {
 	link, _ := url.QueryUnescape(weblink)
-	eventString := fmt.Sprintf("Your event [%s](%s) will start soon.", subject, link)
-	if subject == "" {
-		eventString = fmt.Sprintf("[An event with no subject](%s) will start soon.", link)
-	}
+	data := map[string]any{"Subject": subject, "Link": link}
+	var eventString string
 	if startTime.Before(time.Now()) {
-		eventString = fmt.Sprintf("Your event [%s](%s) is ongoing.", subject, link)
 		if subject == "" {
-			eventString = fmt.Sprintf("[An event with no subject](%s) is ongoing.", link)
+			eventString = tr(bundle, mattermostUserID, "ycal.status.event_ongoing_no_subject", "[An event with no subject]({{.Link}}) is ongoing.", map[string]any{"Link": link})
+		} else {
+			eventString = tr(bundle, mattermostUserID, "ycal.status.event_ongoing", "Your event [{{.Subject}}]({{.Link}}) is ongoing.", data)
+		}
+	} else {
+		if subject == "" {
+			eventString = tr(bundle, mattermostUserID, "ycal.status.event_will_start_no_subject", "[An event with no subject]({{.Link}}) will start soon.", map[string]any{"Link": link})
+		} else {
+			eventString = tr(bundle, mattermostUserID, "ycal.status.event_will_start", "Your event [{{.Subject}}]({{.Link}}) will start soon.", data)
 		}
 	}
 	return eventString
 }
 
-func renderScheduleItem(event *remote.Event, status string) string {
+func renderScheduleItem(event *remote.Event, status string, bundle *mmi18n.Bundle, mattermostUserID string) string {
 	if event == nil {
-		return fmt.Sprintf("You have no upcoming events.\n Shall I change your status back to %s?", prettyStatuses[status])
+		return tr(bundle, mattermostUserID, "ycal.status.no_upcoming_change_back",
+			"You have no upcoming events.\n Shall I change your status back to {{.Status}}?",
+			map[string]any{"Status": prettyStatus(bundle, mattermostUserID, status)})
 	}
 
-	resp := RenderEventWillStartLine(event.Subject, event.Weblink, event.Start.Time())
+	resp := RenderEventWillStartLine(bundle, mattermostUserID, event.Subject, event.Weblink, event.Start.Time())
 
-	resp += fmt.Sprintf("\nShall I change your status to %s?", prettyStatuses[status])
+	resp += "\n" + tr(bundle, mattermostUserID, "ycal.status.change_status_prompt",
+		"Shall I change your status to {{.Status}}?",
+		map[string]any{"Status": prettyStatus(bundle, mattermostUserID, status)})
 	return resp
 }
 
-func statusChangeAttachments(event *remote.Event, status, url string) *model.SlackAttachment {
+func statusChangeAttachments(event *remote.Event, status, url string, bundle *mmi18n.Bundle, mattermostUserID string) *model.SlackAttachment {
+	pretty := prettyStatus(bundle, mattermostUserID, status)
+
 	actionYes := &model.PostAction{
-		Name: "Yes",
+		Name: tr(bundle, mattermostUserID, "ycal.common.yes", "Yes", nil),
 		Integration: &model.PostActionIntegration{
 			URL: url,
 			Context: map[string]interface{}{
 				"value":            true,
 				"change_to":        status,
-				"pretty_change_to": prettyStatuses[status],
+				"pretty_change_to": pretty,
 				"hasEvent":         false,
 			},
 		},
 	}
 
 	actionNo := &model.PostAction{
-		Name: "No",
+		Name: tr(bundle, mattermostUserID, "ycal.common.no", "No", nil),
 		Integration: &model.PostActionIntegration{
 			URL: url,
 			Context: map[string]interface{}{
@@ -100,8 +120,8 @@ func statusChangeAttachments(event *remote.Event, status, url string) *model.Sla
 		actionNo.Integration.Context["startTime"] = string(marshalledStart)
 	}
 
-	title := "Status change"
-	text := renderScheduleItem(event, status)
+	title := tr(bundle, mattermostUserID, "ycal.status.change_title", "Status change", nil)
+	text := renderScheduleItem(event, status, bundle, mattermostUserID)
 	sa := &model.SlackAttachment{
 		Title:    title,
 		Text:     text,

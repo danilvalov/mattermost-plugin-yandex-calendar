@@ -24,14 +24,14 @@ func TestDailySummary(t *testing.T) {
 		name       string
 		parameters []string
 		setup      func(engine.Engine)
-		assertions func(t *testing.T, output string, err error)
+		assertions func(t *testing.T, cmd *Command, output string, err error)
 	}{
 		{
 			name:       "no parameters",
 			parameters: []string{},
 			setup:      func(_ engine.Engine) {},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, getDailySummaryHelp(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryHelp(), output)
 				require.Nil(t, err)
 			},
 		},
@@ -42,7 +42,7 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDaySummaryForUser(gomock.Any(), gomock.Any()).Return("Today's Summary", nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
+			assertions: func(t *testing.T, _ *Command, output string, err error) {
 				require.Equal(t, "Today's Summary", output)
 				require.Nil(t, err)
 			},
@@ -54,7 +54,7 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDaySummaryForUser(gomock.Any(), gomock.Any()).Return("Tomorrow's Summary", nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
+			assertions: func(t *testing.T, _ *Command, output string, err error) {
 				require.Equal(t, "Tomorrow's Summary", output)
 				require.Nil(t, err)
 			},
@@ -66,7 +66,7 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDaySummaryForUser(gomock.Any(), gomock.Any()).Return("", errors.New("summary error")).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
+			assertions: func(t *testing.T, _ *Command, output string, err error) {
 				require.Equal(t, "summary error", output)
 				require.Equal(t, "summary error", err.Error())
 			},
@@ -75,8 +75,8 @@ func TestDailySummary(t *testing.T) {
 			name:       "set time with invalid parameter count",
 			parameters: []string{"time"},
 			setup:      func(_ engine.Engine) {},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, getDailySummarySetTimeErrorMessage(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummarySetTimeHint(), output)
 				require.Nil(t, err)
 			},
 		},
@@ -87,8 +87,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().SetDailySummaryPostTime(gomock.Any(), "09:00").Return(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -99,8 +99,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().SetDailySummaryPostTime(gomock.Any(), "09:00").Return(nil, errors.New("time error")).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "time error\n"+getDailySummarySetTimeErrorMessage(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, "time error\n"+cmd.dailySummarySetTimeHint(), output)
 				require.Nil(t, err)
 			},
 		},
@@ -111,8 +111,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDailySummarySettingsForUser(gomock.Any()).Return(&store.DailySummaryUserSettings{}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "Your daily summary time is not yet configured.\n"+getDailySummarySetTimeErrorMessage(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -123,8 +123,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDailySummarySettingsForUser(gomock.Any()).Return(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: false}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "Your daily summary is configured to show at 09:00 UTC, but is disabled. Enable it with `/ summary enable`.", output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: false}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -135,8 +135,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDailySummarySettingsForUser(gomock.Any()).Return(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "Your daily summary is configured to show at 09:00 UTC.", output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -147,8 +147,10 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetDailySummarySettingsForUser(gomock.Any()).Return(nil, errors.New("settings error")).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "settings error\nYou may need to configure your daily summary using the commands below.\n"+getDailySummaryHelp(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				suffix := cmd.T("ycal.daily.configure_suffix", "You may need to configure your daily summary using the commands below.\n{{.Help}}",
+					map[string]any{"Help": cmd.dailySummaryHelp()})
+				require.Equal(t, "settings error\n"+suffix, output)
 				require.Nil(t, err)
 			},
 		},
@@ -159,8 +161,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().SetDailySummaryEnabled(gomock.Any(), true).Return(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: true}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -171,8 +173,8 @@ func TestDailySummary(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().SetDailySummaryEnabled(gomock.Any(), false).Return(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: false}, nil).Times(1)
 			},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: false}), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.dailySummaryResponse(&store.DailySummaryUserSettings{PostTime: "09:00", Timezone: "UTC", Enable: false}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -180,8 +182,9 @@ func TestDailySummary(t *testing.T) {
 			name:       "invalid command",
 			parameters: []string{"invalid"},
 			setup:      func(_ engine.Engine) {},
-			assertions: func(t *testing.T, output string, err error) {
-				require.Equal(t, "Invalid command. Please try again\n\n"+getDailySummaryHelp(), output)
+			assertions: func(t *testing.T, cmd *Command, output string, err error) {
+				require.Equal(t, cmd.T("ycal.daily.invalid", "Invalid command. Please try again\n\n{{.Help}}",
+					map[string]any{"Help": cmd.dailySummaryHelp()}), output)
 				require.Nil(t, err)
 			},
 		},
@@ -196,7 +199,7 @@ func TestDailySummary(t *testing.T) {
 			}
 
 			mscal := mock_engine.NewMockEngine(ctrl)
-			command := Command{
+			command := &Command{
 				Context: &plugin.Context{},
 				Args: &model.CommandArgs{
 					Command: fmt.Sprintf("/%s dailySummary", config.Provider.CommandTrigger),
@@ -205,13 +208,14 @@ func TestDailySummary(t *testing.T) {
 				ChannelID: "mockChannelID",
 				Config:    conf,
 				Engine:    mscal,
+				I18n:      nil,
 			}
 
 			tt.setup(mscal)
 
 			out, _, err := command.dailySummary(tt.parameters...)
 
-			tt.assertions(t, out, err)
+			tt.assertions(t, command, out, err)
 		})
 	}
 }

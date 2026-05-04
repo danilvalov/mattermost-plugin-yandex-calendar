@@ -5,19 +5,45 @@ package engine
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/views"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/fields"
-
-	"github.com/mattermost/mattermost/server/public/model"
 )
 
-func (processor *notificationProcessor) newSlackAttachment(n *remote.Notification) *model.SlackAttachment {
-	title := views.EnsureSubject(n.Event.Subject)
+func (processor *notificationProcessor) notifyFieldTitle(mattermostUserID, fieldKey string) string {
+	switch fieldKey {
+	case FieldSubject:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.subject", "Subject", nil)
+	case FieldBodyPreview:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.body_preview", "BodyPreview", nil)
+	case FieldImportance:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.importance", "Importance", nil)
+	case FieldDuration:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.duration", "Duration", nil)
+	case FieldWhen:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.when", "When", nil)
+	case FieldLocation:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.location", "Location", nil)
+	case FieldAttendees:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.attendees", "Attendees", nil)
+	case FieldOrganizer:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.organizer", "Organizer", nil)
+	case FieldResponseStatus:
+		return processor.Tr(mattermostUserID, "ycal.notify.field.response_status", "ResponseStatus", nil)
+	default:
+		return fieldKey
+	}
+}
+
+func (processor *notificationProcessor) newSlackAttachment(mattermostUserID string, n *remote.Notification) *model.SlackAttachment {
+	title := views.EnsureSubject(processor.I18n, mattermostUserID, n.Event.Subject)
 	titleLink := n.Event.Weblink
 	text := n.Event.BodyPreview
 	return &model.SlackAttachment{
@@ -30,33 +56,35 @@ func (processor *notificationProcessor) newSlackAttachment(n *remote.Notificatio
 	}
 }
 
-func (processor *notificationProcessor) newEventSlackAttachment(n *remote.Notification, timezone string) *model.SlackAttachment {
-	sa := processor.newSlackAttachment(n)
-	sa.Title = "(new) " + sa.Title
+func (processor *notificationProcessor) newEventSlackAttachment(mattermostUserID string, n *remote.Notification, timezone string) *model.SlackAttachment {
+	sa := processor.newSlackAttachment(mattermostUserID, n)
+	plainTitle := sa.Title
+	sa.Title = processor.Tr(mattermostUserID, "ycal.notify.title_new", "(new) {{.Title}}", map[string]any{"Title": plainTitle})
 
-	fields := eventToFields(n.Event, timezone)
+	fields := processor.eventToFields(mattermostUserID, n.Event, timezone)
 	for _, k := range notificationFieldOrder {
 		v := fields[k]
 
 		sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
-			Title: k,
+			Title: processor.notifyFieldTitle(mattermostUserID, k),
 			Value: strings.Join(v.Strings(), ", "),
 			Short: true,
 		})
 	}
 
 	if n.Event.ResponseRequested && !n.Event.IsOrganizer {
-		sa.Actions = NewPostActionForEventResponse(n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
+		sa.Actions = processor.newPostActionForEventResponse(mattermostUserID, n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
 	}
 	return sa
 }
 
-func (processor *notificationProcessor) updatedEventSlackAttachment(n *remote.Notification, prior *remote.Event, timezone string) (bool, *model.SlackAttachment) {
-	sa := processor.newSlackAttachment(n)
-	sa.Title = "(updated) " + sa.Title
+func (processor *notificationProcessor) updatedEventSlackAttachment(mattermostUserID string, n *remote.Notification, prior *remote.Event, timezone string) (bool, *model.SlackAttachment) {
+	sa := processor.newSlackAttachment(mattermostUserID, n)
+	plainTitle := sa.Title
+	sa.Title = processor.Tr(mattermostUserID, "ycal.notify.title_updated", "(updated) {{.Title}}", map[string]any{"Title": plainTitle})
 
-	newFields := eventToFields(n.Event, timezone)
-	priorFields := eventToFields(prior, timezone)
+	newFields := processor.eventToFields(mattermostUserID, n.Event, timezone)
+	priorFields := processor.eventToFields(mattermostUserID, prior, timezone)
 	changed, added, updated, deleted := fields.Diff(priorFields, newFields)
 	if !changed {
 		return false, nil
@@ -84,7 +112,7 @@ func (processor *notificationProcessor) updatedEventSlackAttachment(n *remote.No
 			continue
 		}
 		sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
-			Title: k,
+			Title: processor.notifyFieldTitle(mattermostUserID, k),
 			Value: views.MarkdownToHTMLEntities(strings.Join(newFields[k].Strings(), ", ")),
 			Short: true,
 		})
@@ -94,7 +122,7 @@ func (processor *notificationProcessor) updatedEventSlackAttachment(n *remote.No
 			continue
 		}
 		sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
-			Title: k,
+			Title: processor.notifyFieldTitle(mattermostUserID, k),
 			Value: fmt.Sprintf("~~%s~~ \u2192 %s", views.MarkdownToHTMLEntities(strings.Join(priorFields[k].Strings(), ", ")), views.MarkdownToHTMLEntities(strings.Join(newFields[k].Strings(), ", "))),
 			Short: true,
 		})
@@ -104,14 +132,14 @@ func (processor *notificationProcessor) updatedEventSlackAttachment(n *remote.No
 			continue
 		}
 		sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
-			Title: k,
+			Title: processor.notifyFieldTitle(mattermostUserID, k),
 			Value: fmt.Sprintf("~~%s~~", views.MarkdownToHTMLEntities(strings.Join(priorFields[k].Strings(), ", "))),
 			Short: true,
 		})
 	}
 
 	if n.Event.ResponseRequested && !n.Event.IsOrganizer && !n.Event.IsCancelled {
-		sa.Actions = NewPostActionForEventResponse(n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
+		sa.Actions = processor.newPostActionForEventResponse(mattermostUserID, n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
 	}
 	return true, sa
 }
@@ -129,13 +157,13 @@ func (processor *notificationProcessor) actionURL(action string) string {
 	return fmt.Sprintf("%s%s%s", processor.Config.PluginURLPath, config.PathPostAction, action)
 }
 
-func NewPostActionForEventResponse(eventID, response, url string) []*model.PostAction {
+func (processor *notificationProcessor) newPostActionForEventResponse(mattermostUserID, eventID, response, url string) []*model.PostAction {
 	context := map[string]interface{}{
 		config.EventIDKey: eventID,
 	}
 
 	pa := &model.PostAction{
-		Name: "Response",
+		Name: processor.Tr(mattermostUserID, "ycal.notify.response_control", "Response", nil),
 		Type: model.PostActionTypeSelect,
 		Integration: &model.PostActionIntegration{
 			URL:     url,
@@ -143,8 +171,21 @@ func NewPostActionForEventResponse(eventID, response, url string) []*model.PostA
 		},
 	}
 
-	for _, o := range []string{OptionNotResponded, OptionYes, OptionNo, OptionMaybe} {
-		pa.Options = append(pa.Options, &model.PostActionOptions{Text: o, Value: o})
+	opts := []struct {
+		val  string
+		text string
+		id   string
+	}{
+		{OptionNotResponded, "Not responded", "ycal.notify.option.not_responded"},
+		{OptionYes, "Yes", "ycal.notify.option.yes"},
+		{OptionNo, "No", "ycal.notify.option.no"},
+		{OptionMaybe, "Maybe", "ycal.notify.option.maybe"},
+	}
+	for _, o := range opts {
+		pa.Options = append(pa.Options, &model.PostActionOptions{
+			Text:  processor.Tr(mattermostUserID, o.id, o.text, nil),
+			Value: o.val,
+		})
 	}
 	switch response {
 	case ResponseNone:
@@ -159,10 +200,15 @@ func NewPostActionForEventResponse(eventID, response, url string) []*model.PostA
 	return []*model.PostAction{pa}
 }
 
-func eventToFields(e *remote.Event, timezone string) fields.Fields {
+func (processor *notificationProcessor) eventToFields(mattermostUserID string, e *remote.Event, timezone string) fields.Fields {
+	notDef := processor.Tr(mattermostUserID, "ycal.notify.not_defined", "Not defined", nil)
+	noneStr := processor.Tr(mattermostUserID, "ycal.notify.none", "None", nil)
+	naStr := processor.Tr(mattermostUserID, "ycal.notify.na", "n/a", nil)
+	allDayLabel := processor.Tr(mattermostUserID, "ycal.view.all_day_label", "All day event", nil)
+
 	date := func(dtStart, dtEnd *remote.DateTime, isAllDayEvent bool) (time.Time, time.Time, string) {
 		if dtStart == nil || dtEnd == nil {
-			return time.Time{}, time.Time{}, "n/a"
+			return time.Time{}, time.Time{}, naStr
 		}
 
 		dtStart = dtStart.In(timezone)
@@ -174,7 +220,7 @@ func eventToFields(e *remote.Event, timezone string) fields.Fields {
 		endDateFormat := "Monday, January 02"
 
 		if isAllDayEvent {
-			return tStart, tEnd, tStart.Format(startFormat) + ": All day event"
+			return tStart, tEnd, tStart.Format(startFormat)+": "+allDayLabel
 		}
 
 		if tStart.Year() != time.Now().Year() || tEnd.Year() != time.Now().Year() {
@@ -206,25 +252,27 @@ func eventToFields(e *remote.Event, timezone string) fields.Fields {
 	dur := ""
 	switch {
 	case days > 0:
-		dur = fmt.Sprintf("%v days", days)
+		dur = processor.Tr(mattermostUserID, "ycal.notify.duration_days", "{{.Count}} days", map[string]any{"Count": strconv.Itoa(days)})
 
 	case e.IsAllDay:
-		dur = "all-day"
+		dur = processor.Tr(mattermostUserID, "ycal.notify.duration_allday", "all-day", nil)
 
 	default:
 		switch hours {
 		case 0:
 			// ignore
 		case 1:
-			dur = "one hour"
+			dur = processor.Tr(mattermostUserID, "ycal.notify.duration_one_hour", "one hour", nil)
 		default:
-			dur = fmt.Sprintf("%v hours", hours)
+			if hours > 0 {
+				dur = processor.Tr(mattermostUserID, "ycal.notify.duration_hours", "{{.Count}} hours", map[string]any{"Count": strconv.Itoa(hours)})
+			}
 		}
 		if minutes > 0 {
 			if dur != "" {
 				dur += ", "
 			}
-			dur += fmt.Sprintf("%v minutes", minutes)
+			dur += processor.Tr(mattermostUserID, "ycal.notify.duration_minutes", "{{.Count}} minutes", map[string]any{"Count": strconv.Itoa(minutes)})
 		}
 	}
 
@@ -236,30 +284,29 @@ func eventToFields(e *remote.Event, timezone string) fields.Fields {
 	}
 
 	if len(attendees) == 0 {
-		attendees = append(attendees, fields.NewStringValue("None"))
+		attendees = append(attendees, fields.NewStringValue(noneStr))
+	}
+
+	valOr := func(s string) string {
+		if s == "" {
+			return notDef
+		}
+		return s
 	}
 
 	ff := fields.Fields{
-		FieldSubject:     fields.NewStringValue(views.EnsureSubject(e.Subject)),
-		FieldBodyPreview: fields.NewStringValue(views.MarkdownToHTMLEntities(valueOrNotDefined(e.BodyPreview))),
-		FieldImportance:  fields.NewStringValue(valueOrNotDefined(e.Importance)),
-		FieldWhen:        fields.NewStringValue(valueOrNotDefined(formattedDate)),
-		FieldDuration:    fields.NewStringValue(valueOrNotDefined(dur)),
+		FieldSubject:     fields.NewStringValue(views.EnsureSubject(processor.I18n, mattermostUserID, e.Subject)),
+		FieldBodyPreview: fields.NewStringValue(views.MarkdownToHTMLEntities(valOr(e.BodyPreview))),
+		FieldImportance:  fields.NewStringValue(valOr(e.Importance)),
+		FieldWhen:        fields.NewStringValue(valOr(formattedDate)),
+		FieldDuration:    fields.NewStringValue(valOr(dur)),
 		FieldOrganizer: fields.NewStringValue(
 			fmt.Sprintf("[%s](mailto:%s)",
 				e.Organizer.EmailAddress.Name, e.Organizer.EmailAddress.Address)),
-		FieldLocation:       fields.NewStringValue(views.MarkdownToHTMLEntities(valueOrNotDefined(e.Location.DisplayName))),
+		FieldLocation:       fields.NewStringValue(views.MarkdownToHTMLEntities(valOr(e.Location.DisplayName))),
 		FieldResponseStatus: fields.NewStringValue(e.ResponseStatus.Response),
-		FieldAttendees:      fields.NewMultiValue(attendees...),
+		FieldAttendees:        fields.NewMultiValue(attendees...),
 	}
 
 	return ff
-}
-
-func valueOrNotDefined(s string) string {
-	if s == "" {
-		return "Not defined"
-	}
-
-	return s
 }

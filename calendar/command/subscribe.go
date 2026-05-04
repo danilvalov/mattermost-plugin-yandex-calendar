@@ -4,8 +4,6 @@
 package command
 
 import (
-	"fmt"
-
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils"
 )
 
@@ -16,14 +14,14 @@ func (c *Command) subscribe(parameters ...string) (string, bool, error) {
 
 	_, err := c.Engine.LoadMyEventSubscription()
 	if err == nil {
-		return "You are already subscribed to events.", false, nil
+		return c.T("ycal.subscribe.already", "You are already subscribed to events.", nil), false, nil
 	}
 
 	_, err = c.Engine.CreateMyEventSubscription()
 	if err != nil {
 		return "", false, err
 	}
-	return "You are now subscribed to events.", false, nil
+	return c.T("ycal.subscribe.success", "You are now subscribed to events.", nil), false, nil
 }
 
 func (c *Command) debugList() (string, bool, error) {
@@ -31,5 +29,5 @@ func (c *Command) debugList() (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	return fmt.Sprintf("Subscriptions:%s", utils.JSONBlock(subs)), false, nil
+	return c.T("ycal.subscribe.list_prefix", "Subscriptions:", nil) + utils.JSONBlock(subs), false, nil
 }

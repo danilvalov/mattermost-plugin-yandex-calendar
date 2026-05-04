@@ -10,5 +10,5 @@ func (c *Command) disconnect(_ ...string) (string, bool, error) {
 	}
 	c.Engine.ClearSettingsPosts(c.Args.UserId)
 
-	return "Successfully disconnected your account", false, nil
+	return c.T("ycal.disconnect.success", "Successfully disconnected your account", nil), false, nil
 }

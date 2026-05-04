@@ -21,11 +21,12 @@ import (
 
 func TestConnect(t *testing.T) {
 	tcs := []struct {
-		name           string
-		command        string
-		setup          func(m engine.Engine)
-		expectedOutput string
-		expectedError  string
+		name             string
+		command          string
+		setup            func(m engine.Engine)
+		expectedOutput   string
+		expectedOutputFn func(*Command) string
+		expectedError    string
 	}{
 		{
 			name:    "user already connected",
@@ -34,10 +35,15 @@ func TestConnect(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetRemoteUser("user_id").Return(&remote.User{Mail: "user@email.com"}, nil).Times(1)
 			},
-			expectedOutput: fmt.Sprintf(
-				"Your Mattermost account is already connected to %s account `user@email.com`. To connect to a different account, first run `/%s disconnect`.",
-				config.Provider.DisplayName, config.Provider.CommandTrigger,
-			),
+			expectedOutputFn: func(c *Command) string {
+				return c.T("ycal.connect.already_connected",
+					"Your Mattermost account is already connected to {{.DisplayName}} account `{{.Mail}}`. To connect to a different account, first run `/{{.Trigger}} disconnect`.",
+					map[string]any{
+						"DisplayName": config.Provider.DisplayName,
+						"Mail":        "user@email.com",
+						"Trigger":     config.Provider.CommandTrigger,
+					})
+			},
 			expectedError: "",
 		},
 		{
@@ -79,7 +85,10 @@ func TestConnect(t *testing.T) {
 			}
 
 			out, _, err := command.Handle()
-			if tc.expectedOutput != "" {
+			switch {
+			case tc.expectedOutputFn != nil:
+				require.Equal(t, tc.expectedOutputFn(&command), out)
+			case tc.expectedOutput != "":
 				require.Equal(t, tc.expectedOutput, out)
 			}
 

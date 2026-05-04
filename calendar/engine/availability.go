@@ -365,7 +365,7 @@ func (m *mscalendar) setCustomStatusFromCalendarView(user *store.User, events []
 
 	if appErr := m.PluginAPI.UpdateMattermostUserCustomStatus(user.MattermostUserID, &model.CustomStatus{
 		Emoji:     "calendar",
-		Text:      "In a meeting",
+		Text:      m.Tr(user.MattermostUserID, "ycal.status.custom_in_meeting", "In a meeting", nil),
 		ExpiresAt: events[0].End.Time(),
 		Duration:  "date_and_time",
 	}); appErr != nil {
@@ -532,7 +532,7 @@ func (m *mscalendar) setStatusOrAskUser(user *store.User, currentStatus *model.S
 	}
 
 	url := fmt.Sprintf("%s%s%s", m.Config.PluginURLPath, config.PathPostAction, config.PathConfirmStatusChange)
-	_, err = m.Poster.DMWithAttachments(user.MattermostUserID, views.RenderStatusChangeNotificationView(events, toSet, url))
+	_, err = m.Poster.DMWithAttachments(user.MattermostUserID, views.RenderStatusChangeNotificationView(events, toSet, url, m.I18n, user.MattermostUserID))
 	if err != nil {
 		return err
 	}
@@ -601,7 +601,7 @@ func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*rem
 				}
 			}
 
-			_, attachment, err := views.RenderUpcomingEventAsAttachment(event, timezone)
+			_, attachment, err := views.RenderUpcomingEventAsAttachment(event, timezone, m.I18n, mattermostUserID)
 			if err != nil {
 				m.Logger.Warnf("notifyUpcomingEvent error rendering schedule item. err=%v", err)
 				continue
@@ -627,9 +627,9 @@ func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*rem
 				for channelID := range eventMetadata.LinkedChannelIDs {
 					post := &model.Post{
 						ChannelId: channelID,
-						Message:   "Upcoming event",
+						Message:   m.Tr(mattermostUserID, "ycal.view.upcoming_channel_stub", "Upcoming event", nil),
 					}
-					attachment, errRender := views.RenderEventAsAttachment(event, timezone, views.ShowTimezoneOption(timezone))
+					attachment, errRender := views.RenderEventAsAttachment(event, timezone, m.I18n, mattermostUserID, views.ShowTimezoneOption(timezone))
 					if errRender != nil {
 						m.Logger.With(bot.LogContext{"err": errRender}).Errorf("notifyUpcomingEvents error rendering channel post")
 						continue

@@ -15,10 +15,10 @@ func (c *Command) viewCalendar(_ ...string) (string, bool, error) {
 	tz, err := c.Engine.GetTimezone(c.user())
 	if err != nil {
 		if strings.Contains(err.Error(), store.ErrorRefreshTokenNotSet) || strings.Contains(err.Error(), store.ErrorUserInactive) {
-			return store.ErrorUserInactive, false, nil
+			return c.T("ycal.err.user_inactive", store.ErrorUserInactive, nil), false, nil
 		}
 
-		return "Error: No timezone found", false, err
+		return c.T("ycal.viewcal.no_timezone", "Error: No timezone found", nil), false, err
 	}
 
 	startOfCurrentDay := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
@@ -27,6 +27,6 @@ func (c *Command) viewCalendar(_ ...string) (string, bool, error) {
 		return "", false, err
 	}
 
-	out, err := views.RenderCalendarView(events, tz)
+	out, err := views.RenderCalendarView(events, tz, c.I18n, c.Args.UserId)
 	return out, false, err
 }

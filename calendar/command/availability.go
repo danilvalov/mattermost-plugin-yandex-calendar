@@ -21,5 +21,5 @@ func (c *Command) debugAvailability(parameters ...string) (string, bool, error) 
 		return resString, false, nil
 	}
 
-	return "bad syntax", false, nil
+	return c.T("ycal.availability.bad_syntax", "bad syntax", nil), false, nil
 }

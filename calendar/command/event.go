@@ -5,11 +5,11 @@ package command
 
 func (c *Command) event(parameters ...string) (string, bool, error) {
 	if len(parameters) == 0 {
-		return getDailySummaryHelp(), false, nil
+		return c.dailySummaryHelp(), false, nil
 	}
 
 	if parameters[0] == "create" {
-		return "Creating events is only supported on desktop.", false, nil
+		return c.T("ycal.event.desktop_only", "Creating events is only supported on desktop.", nil), false, nil
 	}
 
 	return "", false, nil

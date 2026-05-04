@@ -208,7 +208,7 @@ func (api *api) postActionConfirmStatusChange(w http.ResponseWriter, req *http.R
 		returnText = fmt.Sprintf("The status has been changed to %s.", stringPrettyChangeTo)
 	}
 
-	eventInfo, err := getEventInfo(request.Context)
+	eventInfo, err := api.getEventInfo(mattermostUserID, request.Context)
 	if err != nil {
 		utils.SlackAttachmentError(w, err.Error())
 		return
@@ -233,7 +233,7 @@ func (api *api) postActionConfirmStatusChange(w http.ResponseWriter, req *http.R
 	}
 }
 
-func getEventInfo(ctx map[string]interface{}) (string, error) {
+func (api *api) getEventInfo(mattermostUserID string, ctx map[string]interface{}) (string, error) {
 	hasEvent, ok := ctx["hasEvent"].(bool)
 	if !ok {
 		return "", errors.New("cannot check whether there is an event attached")
@@ -259,7 +259,7 @@ func getEventInfo(ctx map[string]interface{}) (string, error) {
 	var startTime time.Time
 	json.Unmarshal([]byte(marshalledStartTime), &startTime)
 
-	return views.RenderEventWillStartLine(subject, weblink, startTime), nil
+	return views.RenderEventWillStartLine(api.I18n, mattermostUserID, subject, weblink, startTime), nil
 }
 
 func isAcceptedError(err error) bool {

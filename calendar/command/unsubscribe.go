@@ -6,7 +6,7 @@ package command
 func (c *Command) unsubscribe(_ ...string) (string, bool, error) {
 	_, err := c.Engine.LoadMyEventSubscription()
 	if err != nil {
-		return "You are not subscribed to events.", false, nil
+		return c.T("ycal.unsubscribe.not_subscribed", "You are not subscribed to events.", nil), false, nil
 	}
 
 	err = c.Engine.DeleteMyEventSubscription()
@@ -14,5 +14,5 @@ func (c *Command) unsubscribe(_ ...string) (string, bool, error) {
 		return "", false, err
 	}
 
-	return "You have unsubscribed from events.", false, nil
+	return c.T("ycal.unsubscribe.success", "You have unsubscribed from events.", nil), false, nil
 }

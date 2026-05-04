@@ -10,8 +10,11 @@ import (
 )
 
 func (c *Command) help(_ ...string) (string, bool, error) {
+	cmds := getCommands(func(id, def string, data map[string]any) string {
+		return c.T(id, def, data)
+	})
 	resp := ""
-	for _, cmd := range getCommands() {
+	for _, cmd := range cmds {
 		desc := cmd.Trigger
 		if cmd.HelpText != "" {
 			desc += " - " + cmd.HelpText

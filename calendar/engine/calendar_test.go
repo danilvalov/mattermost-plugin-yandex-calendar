@@ -216,7 +216,7 @@ func TestCreateEvent(t *testing.T) {
 			setupMock: func() {
 				mockStore.EXPECT().LoadUser(MockMMUserID).Return(nil, errors.New("not found")).Times(1)
 				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID)
-				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf(""), "testDisplayName", "testDisplayName", "testCommandTrigger").Return("", fmt.Errorf("error creating DM")).Times(1)
+				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf("")).Return("", fmt.Errorf("error creating DM")).Times(1)
 				mockLogger.EXPECT().Warnf("CreateEvent error creating DM. err=%v", gomock.Any())
 				mockClient.EXPECT().CreateEvent(gomock.Any()).Return(&remote.Event{}, nil).Times(1)
 			},
@@ -233,7 +233,7 @@ func TestCreateEvent(t *testing.T) {
 			setupMock: func() {
 				mockStore.EXPECT().LoadUser(MockMMUserID).Return(nil, errors.New("not found")).Times(1)
 				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID)
-				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf(""), "testDisplayName", "testDisplayName", "testCommandTrigger").Return("", fmt.Errorf("error creating DM")).Times(1).Return("", nil)
+				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf("")).Return("", fmt.Errorf("error creating DM")).Times(1).Return("", nil)
 				mockClient.EXPECT().CreateEvent(&remote.Event{Subject: MockEventName}).Return(nil, fmt.Errorf("error creating event")).Times(1)
 			},
 			assertions: func(t *testing.T, createdEvent *remote.Event, err error) {
@@ -253,7 +253,7 @@ func TestCreateEvent(t *testing.T) {
 			setupMock: func() {
 				mockStore.EXPECT().LoadUser(MockMMUserID).Return(nil, errors.New("not found")).Times(1)
 				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID)
-				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf(""), "testDisplayName", "testDisplayName", "testCommandTrigger").Return("", fmt.Errorf("error creating DM")).Times(1).Return("", nil)
+				mockPoster.EXPECT().DM(MockMMUserID, gomock.AssignableToTypeOf("")).Return("", fmt.Errorf("error creating DM")).Times(1).Return("", nil)
 				mockClient.EXPECT().CreateEvent(&remote.Event{
 					Subject:   MockEventName,
 					Location:  &remote.Location{DisplayName: "Test Location"},

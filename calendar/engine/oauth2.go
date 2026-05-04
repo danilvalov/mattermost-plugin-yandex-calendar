@@ -19,12 +19,6 @@ import (
 
 const BotWelcomeMessage = "Bot user connected to account %s."
 
-const (
-	RemoteUserAlreadyConnected         = "%s account `%s` is already mapped to Mattermost account `%s`. Please run `/%s disconnect`, while logged in as the Mattermost account"
-	RemoteUserAlreadyConnectedDisabled = "%s account `%s` is already mapped to a Mattermost account, but the account is deactivated. Please enable it and run `/%s disconnect`,  while logged in as the other Mattermost account, and try again"
-	RemoteUserAlreadyConnectedNotFound = "%s account `%s` is already mapped to a Mattermost account, but the Mattermost user could not be found"
-)
-
 type oauth2App struct {
 	Env
 }
@@ -92,19 +86,25 @@ func (app *oauth2App) CompleteOAuth2(authedUserID, code, state string) error {
 	if err == nil {
 		user, userErr := app.PluginAPI.GetMattermostUser(uid)
 		if userErr == nil {
-			msg := fmt.Sprintf(RemoteUserAlreadyConnected, config.Provider.DisplayName, me.Mail, user.Username, config.Provider.CommandTrigger)
+			msg := app.Tr(authedUserID, "ycal.oauth.remote_already_connected",
+				"{{.DisplayName}} account `{{.Mail}}` is already mapped to Mattermost account `{{.Username}}`. Please run `/{{.Trigger}} disconnect`, while logged in as the Mattermost account",
+				map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail, "Username": user.Username, "Trigger": config.Provider.CommandTrigger})
 			app.Poster.DM(authedUserID, msg)
 			return errors.New(msg)
 		}
 
 		if userErr == store.ErrNotFound {
-			msg := fmt.Sprintf(RemoteUserAlreadyConnectedDisabled, config.Provider.DisplayName, me.Mail, config.Provider.CommandTrigger)
+			msg := app.Tr(authedUserID, "ycal.oauth.remote_already_disabled",
+				"{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the account is deactivated. Please enable it and run `/{{.Trigger}} disconnect`,  while logged in as the other Mattermost account, and try again",
+				map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail, "Trigger": config.Provider.CommandTrigger})
 			app.Poster.DM(authedUserID, msg)
 			return errors.New(msg)
 		}
 
 		// Couldn't fetch connected MM account. Reject connect attempt.
-		msg := fmt.Sprintf(RemoteUserAlreadyConnectedNotFound, config.Provider.DisplayName, me.Mail)
+		msg := app.Tr(authedUserID, "ycal.oauth.remote_already_not_found",
+			"{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the Mattermost user could not be found",
+			map[string]any{"DisplayName": config.Provider.DisplayName, "Mail": me.Mail})
 		app.Poster.DM(authedUserID, msg)
 		return errors.New(msg)
 	}

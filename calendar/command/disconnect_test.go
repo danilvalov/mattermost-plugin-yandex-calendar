@@ -22,11 +22,12 @@ import (
 
 func TestDisconnect(t *testing.T) {
 	tcs := []struct {
-		name           string
-		command        string
-		setup          func(engine.Engine)
-		expectedOutput string
-		expectedError  string
+		name             string
+		command          string
+		setup            func(engine.Engine)
+		expectedOutput   string
+		expectedOutputFn func(*Command) string
+		expectedError    string
 	}{
 		{
 			name:    "user not connected",
@@ -35,8 +36,8 @@ func TestDisconnect(t *testing.T) {
 				mscal := m.(*mock_engine.MockEngine)
 				mscal.EXPECT().GetRemoteUser("user_id").Return(&remote.User{}, store.ErrNotFound).Times(1)
 			},
-			expectedOutput: getNotConnectedText("http://localhost"),
-			expectedError:  "",
+			expectedOutputFn: func(c *Command) string { return c.notConnectedText() },
+			expectedError:    "",
 		},
 		{
 			name:    "error fetching user",
@@ -99,7 +100,10 @@ func TestDisconnect(t *testing.T) {
 			}
 
 			out, _, err := command.Handle()
-			if tc.expectedOutput != "" {
+			switch {
+			case tc.expectedOutputFn != nil:
+				require.Equal(t, tc.expectedOutputFn(&command), out)
+			case tc.expectedOutput != "":
 				require.Equal(t, tc.expectedOutput, out)
 			}
 

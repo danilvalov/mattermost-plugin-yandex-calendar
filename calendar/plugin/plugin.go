@@ -14,6 +14,7 @@ import (
 	"text/template"
 
 	pluginapiclient "github.com/mattermost/mattermost/server/public/pluginapi"
+	mmi18n "github.com/mattermost/mattermost/server/public/pluginapi/i18n"
 
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
@@ -51,6 +52,7 @@ type Plugin struct {
 
 	envLock         *sync.RWMutex
 	env             Env
+	i18nBundle      *mmi18n.Bundle
 	Templates       map[string]*template.Template
 	telemetryClient telemetry.Client
 }
@@ -99,7 +101,12 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
-	err = command.Register(pluginAPIClient)
+	p.i18nBundle, err = mmi18n.InitBundle(p.API, filepath.Join("assets", "i18n"))
+	if err != nil {
+		return errors.Wrap(err, "failed to init i18n bundle")
+	}
+
+	err = command.Register(pluginAPIClient, p.i18nBundle)
 	if err != nil {
 		return errors.Wrap(err, "failed to register command")
 	}
@@ -126,6 +133,7 @@ func (p *Plugin) OnActivate() error {
 		)
 		e.bot = e.bot.WithConfig(stored.Config)
 		e.Dependencies.Store = store.NewPluginStore(p.API, e.bot, e.bot, e.Dependencies.Tracker, e.Provider.Features.EncryptedStore, []byte(e.EncryptionKey))
+		e.Dependencies.I18n = p.i18nBundle
 	})
 
 	return nil
@@ -179,6 +187,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 	p.updateEnv(func(e *Env) {
 		p.initEnv(e, pluginURL)
 
+		e.Dependencies.I18n = p.i18nBundle
 		e.StoredConfig = stored
 		e.Config.MattermostSiteURL = *mattermostSiteURL
 		e.Config.MattermostSiteHostname = mattermostURL.Hostname()
@@ -228,6 +237,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 				return engine.New(e.Env, userID)
 			},
 			e.Provider.Features,
+			func() *mmi18n.Bundle { return p.i18nBundle },
 		)
 
 		welcomeFlow := engine.NewWelcomeFlow(e.bot, e.Dependencies.Welcomer, e.Provider.Features)
@@ -246,7 +256,7 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 		e.httpHandler = httputils.NewHandler()
 		oauth2connect.Init(e.httpHandler, engine.NewOAuth2App(e.Env), config.Provider)
 		if e.Provider.Features.PasswordAuth {
-			caldavconnect.Init(e.httpHandler, caldavConnectAdapter{env: e.Env}, config.Provider, p.API)
+			caldavconnect.Init(e.httpHandler, caldavConnectAdapter{env: e.Env}, config.Provider, p.API, p.i18nBundle)
 		}
 		flow.Init(e.httpHandler, welcomeFlow, mscalendarBot)
 		settingspanel.Init(e.httpHandler, e.Dependencies.SettingsPanel)
@@ -279,6 +289,7 @@ func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*mo
 		ChannelID: args.ChannelId,
 		Config:    env.Config,
 		Engine:    engine.New(env.Env, args.UserId),
+		I18n:      env.Dependencies.I18n,
 	}
 	out, mustRedirectToDM, err := cmd.Handle()
 	if err != nil {

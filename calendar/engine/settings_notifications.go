@@ -17,15 +17,17 @@ type notificationSetting struct {
 	description string
 	id          string
 	dependsOn   string
+	tr          settingspanel.Translator
 }
 
-func NewNotificationsSetting(getCal func(string) Engine) settingspanel.Setting {
+func NewNotificationsSetting(getCal func(string) Engine, tr settingspanel.Translator) settingspanel.Setting {
 	return &notificationSetting{
 		title:       "Receive notifications of new events",
 		description: "Do you want to subscribe to new events and receive a message when they are created?",
 		id:          "new_or_updated_event_setting",
 		dependsOn:   "",
 		getCal:      getCal,
+		tr:          tr,
 	}
 }
 
@@ -90,8 +92,11 @@ func (s *notificationSetting) getActionStyle(actionValue, currentValue string) s
 }
 
 func (s *notificationSetting) GetSlackAttachments(userID, settingHandler string, disabled bool) (*model.SlackAttachment, error) {
-	title := fmt.Sprintf("Setting: %s", s.title)
-	currentValueMessage := "Disabled"
+	key := "ycal.settings." + s.id + "."
+	locTitle := s.tr.T(userID, key+"title", s.title, nil)
+	locDesc := s.tr.T(userID, key+"desc", s.description, nil)
+	title := s.tr.T(userID, "ycal.settings.ui.attachment_title", "Setting: {{.Name}}", map[string]any{"Name": locTitle})
+	currentValueMessage := s.tr.T(userID, "ycal.settings.ui.disabled", "Disabled", nil)
 
 	actions := []*model.PostAction{}
 	if !disabled {
@@ -100,15 +105,19 @@ func (s *notificationSetting) GetSlackAttachments(userID, settingHandler string,
 			return nil, err
 		}
 
-		currentTextValue := "No"
-		if currentValue == "true" {
-			currentTextValue = "Yes"
+		curStr, _ := currentValue.(string)
+		currentTextValue := s.tr.T(userID, "ycal.settings.ui.no", "No", nil)
+		if curStr == "true" {
+			currentTextValue = s.tr.T(userID, "ycal.settings.ui.yes", "Yes", nil)
 		}
-		currentValueMessage = fmt.Sprintf("**Current value:** %s", currentTextValue)
+		currentValueMessage = s.tr.T(userID, "ycal.settings.ui.current_value", "**Current value:** {{.Value}}", map[string]any{"Value": currentTextValue})
+
+		yes := s.tr.T(userID, "ycal.settings.ui.yes", "Yes", nil)
+		no := s.tr.T(userID, "ycal.settings.ui.no", "No", nil)
 
 		actionTrue := model.PostAction{
-			Name:  "Yes",
-			Style: s.getActionStyle("true", currentValue.(string)),
+			Name:  yes,
+			Style: s.getActionStyle("true", curStr),
 			Integration: &model.PostActionIntegration{
 				URL: settingHandler,
 				Context: map[string]interface{}{
@@ -119,8 +128,8 @@ func (s *notificationSetting) GetSlackAttachments(userID, settingHandler string,
 		}
 
 		actionFalse := model.PostAction{
-			Name:  "No",
-			Style: s.getActionStyle("false", currentValue.(string)),
+			Name:  no,
+			Style: s.getActionStyle("false", curStr),
 			Integration: &model.PostActionIntegration{
 				URL: settingHandler,
 				Context: map[string]interface{}{
@@ -132,7 +141,7 @@ func (s *notificationSetting) GetSlackAttachments(userID, settingHandler string,
 		actions = []*model.PostAction{&actionTrue, &actionFalse}
 	}
 
-	text := fmt.Sprintf("%s\n%s", s.description, currentValueMessage)
+	text := fmt.Sprintf("%s\n%s", locDesc, currentValueMessage)
 	sa := model.SlackAttachment{
 		Title:    title,
 		Text:     text,
