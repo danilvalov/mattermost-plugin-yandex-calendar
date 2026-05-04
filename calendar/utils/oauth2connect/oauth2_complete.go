@@ -7,10 +7,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/httputils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/httputils"
 )
 
 func (oa *oa) oauth2Complete(w http.ResponseWriter, r *http.Request) {
+	if oa.provider.Features.PasswordAuth {
+		http.Error(w, "OAuth is not used for this calendar provider.", http.StatusBadRequest)
+		return
+	}
 	mattermostUserID := r.Header.Get("Mattermost-User-ID")
 	if mattermostUserID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)

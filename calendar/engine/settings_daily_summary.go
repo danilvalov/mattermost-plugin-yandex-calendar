@@ -10,8 +10,8 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/model"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/settingspanel"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/settingspanel"
 )
 
 type dailySummarySetting struct {

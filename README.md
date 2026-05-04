@@ -1,82 +1,47 @@
-# Mattermost Microsoft Calendar Plugin
+# Mattermost Yandex Calendar Plugin
 
-[![Build Status](https://img.shields.io/circleci/project/github/mattermost/mattermost-plugin-mscalendar/master.svg)](https://circleci.com/gh/mattermost/mattermost-plugin-mscalendar)
-[![Code Coverage](https://img.shields.io/codecov/c/github/mattermost/mattermost-plugin-mscalendar/master.svg)](https://codecov.io/gh/mattermost/mattermost-plugin-mscalendar)
-[![Release](https://img.shields.io/github/v/release/mattermost/mattermost-plugin-mscalendar)](https://github.com/mattermost/mattermost-plugin-mscalendar/releases/latest)
-[![HW](https://img.shields.io/github/issues/mattermost/mattermost-plugin-mscalendar/Up%20For%20Grabs?color=dark%20green&label=Help%20Wanted)](https://github.com/mattermost/mattermost-plugin-mscalendar/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22Up+For+Grabs%22+label%3A%22Help+Wanted%22)
+[![Build Status](https://img.shields.io/circleci/project/github/danilvalov/mattermost-plugin-yandex-calendar/master.svg)](https://circleci.com/gh/danilvalov/mattermost-plugin-yandex-calendar)
+[![Code Coverage](https://img.shields.io/codecov/c/github/danilvalov/mattermost-plugin-yandex-calendar/master.svg)](https://codecov.io/gh/danilvalov/mattermost-plugin-yandex-calendar)
+[![Release](https://img.shields.io/github/v/release/danilvalov/mattermost-plugin-yandex-calendar)](https://github.com/danilvalov/mattermost-plugin-yandex-calendar/releases/latest)
+[![HW](https://img.shields.io/github/issues/danilvalov/mattermost-plugin-yandex-calendar/Up%20For%20Grabs?color=dark%20green&label=Help%20Wanted)](https://github.com/danilvalov/mattermost-plugin-yandex-calendar/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3A%22Up+For+Grabs%22+label%3A%22Help+Wanted%22)
 
-## Help Wanted tickets can be found [here](https://github.com/mattermost/mattermost-plugin-mscalendar/issues?utf8=%E2%9C%93&q=is%3Aopen+label%3A%22up+for+grabs%22+label%3A%22help+wanted%22+sort%3Aupdated-desc).
+A [Mattermost](https://mattermost.com) calendar plugin that syncs **Yandex Calendar** over **CalDAV** using a Yandex **app password** (no OAuth).
 
-## Contents
+## Documentation
 
-- [Overview](#overview)
-- [Features](#features)
-- [Admin Guide](#admin-guide)
-- [Configuration, setup, and usage](#configuration-setup-and-usage)
-- [Development](#development)
-
-## Overview
-
-This plugin supports a two-way integration between Mattermost and Microsoft Outlook Calendar.
+[About](docs/about.md) | [Set up](docs/setup.md) | [Configure](docs/configuration.md) | [Use](docs/usage.md) | [CalDAV notes](docs/caldav-yandex.md)
 
 ## Features
 
-- Daily summary of calendar events.
-- Automatic user status synchronization into Mattermost.
-- Accept or decline calendar event invites from Mattermost.
+- Daily summary, reminders, status sync, and slash-command agendas
+- Connect with Yandex email + app password through `/ycal connect` and the CalDAV connect page
+- Background polling for event changes (Yandex does not support calendar push webhooks)
 
-## Admin guide
+## Build
 
-### Installation
+Requirements: Go 1.24+, Node/npm for the webapp bundle.
 
-From Mattermost v10, this plugin is pre-packaged with the Mattermost Server.
+```bash
+git submodule update --init --recursive   # once after clone; `make dist` also initializes submodules
+make verify-submodule-pins   # optional: confirm go-webdav gitlink matches upstream v0.7.0 (needs network)
+make dist
+```
 
-If your Mattermost deployment is on a release prior to v10, download the latest [plugin binary release](https://github.com/mattermost/mattermost-plugin-mscalendar/releases), and upload it to your server via **System Console > Plugin Management**.
+Install the generated tarball under **System Console > Plugins**.
 
-## Configuration, Setup, and Usage
+## Repository layout
 
-See the Mattermost Product Documentation for details on [setting up](https://docs.mattermost.com/integrate/microsoft-calendar-interoperability.html#setup), [configuring](https://docs.mattermost.com/integrate/microsoft-calendar-interoperability.html#enable-and-configure-the-microsoft-teams-meetings-integration-in-mattermost), and [using](https://docs.mattermost.com/integrate/microsoft-calendar-interoperability.html#usage) the Mattermost for Microsoft Calendar integration.
+- `ycal/` — Yandex CalDAV provider (`remote.Client` implementation)
+- `calendar/` — plugin server logic (commands, jobs, engine, API)
+- `third_party/` — Git submodule [`emersion/go-webdav`](https://github.com/emersion/go-webdav) (v0.7.0 + Yandex ETag patch). Patches live under `patches/` and are applied by `make submodules`.
 
 ## Development
 
-This plugin contains a server portion. Read our documentation about the [Developer Workflow](https://developers.mattermost.com/integrate/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/integrate/plugins/developer-setup/) for more information about developing and extending plugins.
+Read Mattermost documentation about the [Developer Workflow](https://developers.mattermost.com/integrate/plugins/developer-workflow/) and [Developer Setup](https://developers.mattermost.com/integrate/plugins/developer-setup/) for more information about developing and extending plugins.
 
-## How to Release
+## How to release
 
-To trigger a release of the Mattermost Microsoft Calendar Plugin, follow these steps:
+To trigger a release, run one of the following from a protected branch (see `Makefile`):
 
-1. **For Patch Release:** Run the following command:
-    ```
-    make patch
-    ```
-   This will release a patch change.
-
-2. **For Minor Release:** Run the following command:
-    ```
-    make minor
-    ```
-   This will release a minor change.
-
-3. **For Major Release:** Run the following command:
-    ```
-    make major
-    ```
-   This will release a major change.
-
-4. **For Patch Release Candidate (RC):** Run the following command:
-    ```
-    make patch-rc
-    ```
-   This will release a patch release candidate.
-
-5. **For Minor Release Candidate (RC):** Run the following command:
-    ```
-    make minor-rc
-    ```
-   This will release a minor release candidate.
-
-6. **For Major Release Candidate (RC):** Run the following command:
-    ```
-    make major-rc
-    ```
-   This will release a major release candidate.
+- `make patch`, `make minor`, or `make major` for a release
+- `make patch-rc`, `make minor-rc`, or `make major-rc` for a release candidate

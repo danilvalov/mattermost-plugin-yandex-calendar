@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/views"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/views"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
 func (c *Command) viewCalendar(_ ...string) (string, bool, error) {

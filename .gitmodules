@@ -1,0 +1,4 @@
+[submodule "third_party/go-webdav"]
+	path = third_party/go-webdav
+	url = https://github.com/emersion/go-webdav.git
+	ignore = dirty

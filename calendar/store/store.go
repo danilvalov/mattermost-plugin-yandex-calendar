@@ -8,11 +8,11 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/plugin"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/tracker"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/flow"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/kvstore"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/settingspanel"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/tracker"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/flow"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/kvstore"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/settingspanel"
 )
 
 const (

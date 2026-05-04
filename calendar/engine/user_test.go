@@ -11,14 +11,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/mock_plugin_api"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/mock_welcomer"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote/mock_remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store/mock_store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot/mock_bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/mock_plugin_api"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/mock_welcomer"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote/mock_remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store/mock_store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot/mock_bot"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )

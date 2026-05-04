@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 )
 
 func (c *client) GetMailboxSettings(remoteUserID string) (*remote.MailboxSettings, error) {

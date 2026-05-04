@@ -3,7 +3,7 @@
 
 package config
 
-import "github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
+import "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 
 var Provider ProviderConfig
 
@@ -36,6 +36,13 @@ type ProviderFeatures struct {
 	// regardless of the OAuth2ForceConsent admin setting. Use for providers that
 	// require user consent to issue a refresh token (e.g. Google OAuth2).
 	ForceOAuth2Consent bool
+
+	// PasswordAuth uses CalDAV app-password flow instead of OAuth (e.g. Yandex Calendar).
+	PasswordAuth bool
+
+	// EnableEventPolling runs a background job that polls the remote calendar and
+	// feeds the notification processor (for providers without push/webhooks).
+	EnableEventPolling bool
 }
 
 // ProviderConfig represents the specific configuration that changes when building for different

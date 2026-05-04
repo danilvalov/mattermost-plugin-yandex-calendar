@@ -1,0 +1,22 @@
+--- a/internal/elements.go
++++ b/internal/elements.go
+@@ -379,9 +379,16 @@
+ type ETag string
+ 
+ func (etag *ETag) UnmarshalText(b []byte) error {
+-	s, err := strconv.Unquote(string(b))
+-	if err != nil {
+-		return fmt.Errorf("webdav: failed to unquote ETag: %v", err)
++	s := strings.TrimSpace(string(b))
++	if s == "" {
++		*etag = ""
++		return nil
++	}
++	// RFC 4918 uses a DQUOTE-wrapped opaque-token. Some CalDAV servers (notably
++	// Yandex) return weak ETags or unquoted values that strconv.Unquote rejects.
++	if uq, err := strconv.Unquote(s); err == nil {
++		*etag = ETag(uq)
++		return nil
+ 	}
+ 	*etag = ETag(s)
+ 	return nil

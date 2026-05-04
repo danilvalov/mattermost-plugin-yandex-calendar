@@ -12,9 +12,9 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/oauth2connect"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/oauth2connect"
 )
 
 const BotWelcomeMessage = "Bot user connected to account %s."
@@ -36,6 +36,9 @@ func NewOAuth2App(env Env) oauth2connect.App {
 }
 
 func (app *oauth2App) InitOAuth2(mattermostUserID string) (url string, err error) {
+	if config.Provider.Features.PasswordAuth {
+		return "", fmt.Errorf("use the CalDAV connect page to link your account")
+	}
 	user, err := app.Store.LoadUser(mattermostUserID)
 	if err == nil {
 		return "", fmt.Errorf("user is already connected to %s", user.Remote.Mail)

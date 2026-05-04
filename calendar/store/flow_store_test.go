@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/testutil"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/tracker/mock_tracker"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/testutil"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/tracker/mock_tracker"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )

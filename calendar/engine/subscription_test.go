@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )

@@ -11,12 +11,12 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/views"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/views"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 )
 
 const (

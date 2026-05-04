@@ -9,7 +9,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/mattermost/mattermost/server/public/plugin"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
 type API struct {

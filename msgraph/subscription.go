@@ -11,8 +11,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 )
 
 const subscribeTTL = 48 * time.Hour
@@ -115,4 +115,9 @@ func (c *client) ListSubscriptions() ([]*remote.Subscription, error) {
 		return nil, errors.Wrap(err, "msgraph ListSubscriptions")
 	}
 	return v.Value, nil
+}
+
+func (c *client) PollNotifications(_, _ string) ([]*remote.Notification, error) {
+	// Microsoft Graph uses webhooks; polling is not used.
+	return nil, nil
 }

@@ -6,8 +6,8 @@ package command
 import (
 	"strings"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils"
 )
 
 func (c *Command) showCalendars(_ ...string) (string, bool, error) {

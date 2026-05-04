@@ -17,12 +17,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/mock_plugin_api"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote/mock_remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store/mock_store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot/mock_bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/mock_plugin_api"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote/mock_remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store/mock_store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot/mock_bot"
 
 	"github.com/mattermost/mattermost/server/public/model"
 )
@@ -169,8 +169,9 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "End time before start time",
 			payload: func() createEventPayload {
-				futureTime := time.Now().UTC().Add(24 * time.Hour)
-				return GetMockCreateEventPayload(false, nil, futureTime.Format("2006-01-02"), futureTime.Add(2*time.Hour).Format("15:04"), futureTime.Add(1*time.Hour).Format("15:04"), "mockDescription", "mockSubject", "mockLocation", "")
+				base := time.Now().In(loc).Add(72 * time.Hour).Truncate(time.Minute)
+				d := base.Format("2006-01-02")
+				return GetMockCreateEventPayload(false, nil, d, base.Add(2*time.Hour).Format("15:04"), base.Add(1*time.Hour).Format("15:04"), "mockDescription", "mockSubject", "mockLocation", "")
 			}(),
 			assertions: func(t *testing.T, err error) {
 				assert.ErrorContains(t, err, "end date cannot be earlier than start date")
@@ -179,8 +180,9 @@ func TestIsValid(t *testing.T) {
 		{
 			name: "Valid event",
 			payload: func() createEventPayload {
-				futureTime := time.Now().UTC().Add(24 * time.Hour)
-				return GetMockCreateEventPayload(false, nil, futureTime.Format("2006-01-02"), futureTime.Add(1*time.Hour).Format("15:04"), futureTime.Add(2*time.Hour).Format("15:04"), "mockDescription", "mockSubject", "mockLocation", "")
+				base := time.Now().In(loc).Add(72 * time.Hour).Truncate(time.Minute)
+				d := base.Format("2006-01-02")
+				return GetMockCreateEventPayload(false, nil, d, base.Add(1*time.Hour).Format("15:04"), base.Add(2*time.Hour).Format("15:04"), "mockDescription", "mockSubject", "mockLocation", "")
 			}(),
 			assertions: func(t *testing.T, err error) {
 				assert.NoError(t, err)

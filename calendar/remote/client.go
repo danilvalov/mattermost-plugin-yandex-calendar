@@ -43,6 +43,9 @@ type Subscriptions interface {
 	GetNotificationData(*Notification) (*Notification, error)
 	ListSubscriptions() ([]*Subscription, error)
 	RenewSubscription(notificationURL, remoteUserID string, sub *Subscription) (*Subscription, error)
+	// PollNotifications returns calendar updates for providers without webhooks (e.g. CalDAV).
+	// subscriptionID is the stored EventSubscriptionID; return (nil, nil) if unsupported or nothing to report.
+	PollNotifications(remoteUserID, subscriptionID string) ([]*Notification, error)
 }
 
 type Utils interface {

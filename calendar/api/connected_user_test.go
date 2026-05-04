@@ -12,7 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
 func TestConnectedUserHandler(t *testing.T) {

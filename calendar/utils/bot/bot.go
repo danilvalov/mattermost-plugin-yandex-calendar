@@ -10,7 +10,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/mattermost/mattermost/server/public/pluginapi"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/flow"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/flow"
 )
 
 type Bot interface {

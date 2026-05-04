@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils"
 )
 
 func TestLimitReadCloser(t *testing.T) {

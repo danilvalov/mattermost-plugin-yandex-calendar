@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 )
 
 func (c *Command) info(_ ...string) (string, bool, error) {

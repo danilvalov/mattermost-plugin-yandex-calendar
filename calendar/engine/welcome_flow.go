@@ -6,10 +6,10 @@ package engine
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/flow"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/flow"
 )
 
 type WelcomeFlow struct {

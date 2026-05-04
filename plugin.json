@@ -1,10 +1,10 @@
 {
-    "id": "com.mattermost.mscalendar",
-    "name": "Microsoft Calendar",
-    "description": "Microsoft Calendar Integration",
-    "homepage_url": "https://mattermost.com/pl/mattermost-plugin-mscalendar",
-    "support_url": "https://github.com/mattermost/mattermost-plugin-mscalendar/issues",
-    "icon_path": "assets/profile-mscalendar.svg",
+    "id": "mattermost-plugin-yandex-calendar",
+    "name": "Yandex Calendar",
+    "description": "Yandex Calendar integration via CalDAV (app password)",
+    "homepage_url": "https://github.com/danilvalov/mattermost-plugin-yandex-calendar",
+    "support_url": "https://github.com/danilvalov/mattermost-plugin-yandex-calendar/issues",
+    "icon_path": "assets/profile-ycal.svg",
     "min_server_version": "10.7.0",
     "server": {
         "executables": {
@@ -67,37 +67,11 @@
                 "default": false
             },
             {
-                "key": "OAuth2Authority",
-                "display_name": "Azure Directory (tenant) ID:",
-                "type": "text",
-                "help_text": "Directory (tenant) ID.",
-                "placeholder": "",
-                "default": null
-            },
-            {
-                "key": "OAuth2ClientId",
-                "display_name": "Azure Application (client) ID:",
-                "type": "text",
-                "help_text": "Microsoft Office Client ID.",
-                "placeholder": "",
-                "default": ""
-            },
-            {
-                "key": "OAuth2ClientSecret",
-                "display_name": "Microsoft Office Client Secret:",
-                "type": "text",
-                "help_text": "Microsoft Office Client Secret.",
-                "placeholder": "",
-                "default": "",
+                "key": "EncryptionKey",
+                "display_name": "Encryption key",
+                "type": "generated",
+                "help_text": "**Required**: The encryption key used to store user credentials and data. If this is regenerated all user authentication data will be lost and users will need to reconnect.",
                 "secret": true
-            },
-            {
-                "key": "OAuth2ForceConsent",
-                "display_name": "Force OAuth2 consent prompt:",
-                "type": "bool",
-                "help_text": "When true, users are always prompted for consent during OAuth2 authorization. Set to false if your Azure/Entra configuration requires admin consent for registered applications and non-admin users are encountering authorization errors.",
-                "placeholder": "",
-                "default": true
             }
         ]
     }

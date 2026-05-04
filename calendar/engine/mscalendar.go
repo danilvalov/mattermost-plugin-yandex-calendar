@@ -6,12 +6,12 @@ package engine
 import (
 	"github.com/mattermost/mattermost/server/public/model"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/tracker"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/settingspanel"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/tracker"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/settingspanel"
 )
 
 type Engine interface {
@@ -27,15 +27,16 @@ type Engine interface {
 
 // Dependencies contains all API dependencies
 type Dependencies struct {
-	Logger            bot.Logger
-	PluginAPI         PluginAPI
-	Poster            bot.Poster
-	Remote            remote.Remote
-	Store             store.Store
-	SettingsPanel     settingspanel.Panel
-	IsAuthorizedAdmin func(string) (bool, error)
-	Welcomer          Welcomer
-	Tracker           tracker.Tracker
+	Logger                bot.Logger
+	PluginAPI             PluginAPI
+	Poster                bot.Poster
+	Remote                remote.Remote
+	Store                 store.Store
+	SettingsPanel         settingspanel.Panel
+	IsAuthorizedAdmin     func(string) (bool, error)
+	Welcomer              Welcomer
+	Tracker               tracker.Tracker
+	NotificationProcessor NotificationProcessor
 }
 
 type PluginAPI interface {

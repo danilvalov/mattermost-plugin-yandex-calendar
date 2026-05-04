@@ -6,10 +6,10 @@ package main
 import (
 	mattermostplugin "github.com/mattermost/mattermost/server/public/plugin"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/plugin"
-	"github.com/mattermost/mattermost-plugin-mscalendar/msgraph"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/plugin"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/ycal"
 )
 
 var BuildHash string
@@ -18,7 +18,7 @@ var BuildDate string
 var CalendarProvider string
 
 func main() {
-	config.Provider = msgraph.GetMSCalendarProviderConfig()
+	config.Provider = ycal.GetYCalProviderConfig()
 
 	mattermostplugin.ClientMain(
 		plugin.NewWithEnv(

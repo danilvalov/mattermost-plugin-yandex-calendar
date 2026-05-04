@@ -6,9 +6,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/httputils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/httputils"
 )
 
 type api struct {

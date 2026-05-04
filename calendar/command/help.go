@@ -6,7 +6,7 @@ package command
 import (
 	"fmt"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 )
 
 func (c *Command) help(_ ...string) (string, bool, error) {

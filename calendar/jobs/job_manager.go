@@ -12,7 +12,7 @@ import (
 	"github.com/mattermost/mattermost/server/public/pluginapi/cluster"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
 )
 
 type JobManager struct {
@@ -113,4 +113,9 @@ func (jm *JobManager) deactivateJob(job RegisteredJob) error {
 // getEnv returns the engine.Env stored on the job manager
 func (jm *JobManager) getEnv() engine.Env {
 	return jm.env
+}
+
+// SetEnv updates the env snapshot used by scheduled jobs (e.g. after config reload).
+func (jm *JobManager) SetEnv(env engine.Env) {
+	jm.env = env
 }

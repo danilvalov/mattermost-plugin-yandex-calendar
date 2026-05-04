@@ -6,7 +6,7 @@ package remote
 import (
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/tz"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/tz"
 )
 
 type EmailAddress struct {

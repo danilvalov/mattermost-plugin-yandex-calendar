@@ -6,7 +6,7 @@ package engine
 import (
 	"time"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 )
 
 type Calendar interface {

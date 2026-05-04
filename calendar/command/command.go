@@ -13,9 +13,9 @@ import (
 	"github.com/mattermost/mattermost/server/public/pluginapi/experimental/command"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
 // Handler handles commands
@@ -28,10 +28,15 @@ type Command struct {
 }
 
 func getNotConnectedText(pluginURL string) string {
+	connectPath := "/oauth2/connect"
+	if config.Provider.Features.PasswordAuth {
+		connectPath = "/caldav/connect"
+	}
 	return fmt.Sprintf(
-		"It looks like your Mattermost account is not connected to a %s account. [Click here to connect your account](%s/oauth2/connect) or use `/%s connect`.",
+		"It looks like your Mattermost account is not connected to a %s account. [Click here to connect your account](%s%s) or use `/%s connect`.",
 		config.Provider.DisplayName,
 		pluginURL,
+		connectPath,
 		config.Provider.CommandTrigger,
 	)
 }

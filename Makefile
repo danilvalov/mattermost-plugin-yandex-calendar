@@ -18,13 +18,13 @@ export GO111MODULE=on
 # We need to export GOBIN to allow it to be set
 # for processes spawned from the Makefile
 export GOBIN ?= $(PWD)/bin
-GO_PACKAGES ?= ./server/... ./calendar/... ./msgraph/...
+GO_PACKAGES ?= ./server/... ./calendar/... ./msgraph/... ./ycal/...
 
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
 
 # Repository URL
-REPOSITORY_URL ?= github.com/mattermost/mattermost-plugin-mscalendar
+REPOSITORY_URL ?= github.com/danilvalov/mattermost-plugin-yandex-calendar
 
 ## Define the default target (make all)
 .PHONY: default
@@ -39,6 +39,8 @@ BUNDLE_NAME ?= $(PLUGIN_ID)-$(PLUGIN_VERSION).tar.gz
 ifneq ($(wildcard build/custom.mk),)
 	include build/custom.mk
 endif
+
+include build/submodules.mk
 
 ifneq ($(MM_DEBUG),)
 	GO_BUILD_GCFLAGS = -gcflags "all=-N -l"
@@ -191,7 +193,7 @@ install-go-tools:
 
 ## Runs golangci-lint and eslint.
 .PHONY: check-style
-check-style: apply webapp/node_modules install-go-tools
+check-style: submodules apply webapp/node_modules install-go-tools
 	@echo Checking for style guide compliance
 
 ifneq ($(HAS_WEBAPP),)
@@ -211,7 +213,7 @@ endif
 
 ## Builds the server, if it exists, for all supported architectures, unless MM_SERVICESETTINGS_ENABLEDEVELOPER is set.
 .PHONY: server
-server:
+server: submodules
 ifneq ($(HAS_SERVER),)
 ifneq ($(MM_DEBUG),)
 	$(info DEBUG mode is on; to disable, unset MM_DEBUG)
@@ -317,7 +319,11 @@ ifneq ($(HAS_WEBAPP),)
 	mkdir -p dist/$(PLUGIN_ID)/webapp
 	cp -r webapp/dist dist/$(PLUGIN_ID)/webapp/
 endif
+ifeq ($(shell uname),Darwin)
+	cd dist && tar --disable-copyfile -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
+else
 	cd dist && tar -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
+endif
 
 	@echo plugin built at: dist/$(BUNDLE_NAME)
 
@@ -386,7 +392,7 @@ detach: setup-attach
 
 ## Runs any lints and unit tests defined for the server and webapp, if they exist.
 .PHONY: test
-test: apply webapp/node_modules install-go-tools
+test: submodules apply webapp/node_modules install-go-tools
 ifneq ($(HAS_SERVER),)
 	$(GOBIN)/gotestsum -- -v ./...
 endif
@@ -397,7 +403,7 @@ endif
 ## Runs any lints and unit tests defined for the server and webapp, if they exist, optimized
 ## for a CI environment.
 .PHONY: test-ci
-test-ci: apply webapp/node_modules install-go-tools
+test-ci: submodules apply webapp/node_modules install-go-tools
 ifneq ($(HAS_SERVER),)
 	$(GOBIN)/gotestsum --format standard-verbose --junitfile report.xml -- ./...
 endif
@@ -407,7 +413,7 @@ endif
 
 ## Creates a coverage report for the server code.
 .PHONY: coverage
-coverage: apply webapp/node_modules
+coverage: submodules apply webapp/node_modules
 ifneq ($(HAS_SERVER),)
 	$(GO) test $(GO_TEST_FLAGS) -coverprofile=server/coverage.txt $(GO_PACKAGES)
 	$(GO) tool cover -html=server/coverage.txt

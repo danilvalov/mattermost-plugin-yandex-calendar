@@ -3,7 +3,7 @@
 
 package store
 
-import "github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/kvstore"
+import "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/kvstore"
 
 type WelcomeStore interface {
 	LoadUserWelcomePost(mattermostID string) (string, error)

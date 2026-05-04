@@ -1,12 +1,14 @@
-module github.com/mattermost/mattermost-plugin-mscalendar
+module github.com/danilvalov/mattermost-plugin-yandex-calendar
 
 go 1.24.6
 
 require (
+	github.com/emersion/go-ical v0.0.0-20250609112844-439c63cef608
+	github.com/emersion/go-webdav v0.7.0
 	github.com/golang/mock v1.6.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/jarcoal/httpmock v1.0.4
 	github.com/mattermost/mattermost/server/public v0.1.13
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/pkg/errors v0.9.1
@@ -29,7 +31,6 @@ require (
 	github.com/go-asn1-ber/asn1-ber v1.5.7 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -54,6 +55,7 @@ require (
 	github.com/segmentio/backo-go v1.1.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/teambition/rrule-go v1.8.2 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -74,3 +76,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+// Submodules: github.com/emersion/go-webdav @ v0.7.0 + patches/go-webdav-v0.7.0-yandex-getetag.patch (see make submodules).
+replace github.com/emersion/go-webdav => ./third_party/go-webdav

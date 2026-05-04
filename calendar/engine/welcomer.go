@@ -8,10 +8,10 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/model"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/flow"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/flow"
 )
 
 type Welcomer interface {
@@ -35,6 +35,8 @@ type mscBot struct {
 
 const (
 	WelcomeMessage = `Welcome to the %s plugin. [Click here to link your account.](%s/oauth2/connect)`
+	// WelcomeMessagePasswordAuth is used when the provider uses app passwords (CalDAV) instead of OAuth.
+	WelcomeMessagePasswordAuth = `Welcome to the %s plugin. [Open the connect page](%s/caldav/connect) to enter your account email and app password.`
 )
 
 func (m *mscalendar) Welcome(userID string) error {
@@ -116,7 +118,12 @@ func (bot *mscBot) WelcomeFlowEnd(userID string) {
 
 func (bot *mscBot) newConnectAttachment() *model.SlackAttachment {
 	title := "Connect"
-	text := fmt.Sprintf(WelcomeMessage, bot.Provider.DisplayName, bot.pluginURL)
+	var text string
+	if bot.Provider.Features.PasswordAuth {
+		text = fmt.Sprintf(WelcomeMessagePasswordAuth, bot.Provider.DisplayName, bot.pluginURL)
+	} else {
+		text = fmt.Sprintf(WelcomeMessage, bot.Provider.DisplayName, bot.pluginURL)
+	}
 	sa := model.SlackAttachment{
 		Title:    title,
 		Text:     text,

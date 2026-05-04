@@ -6,8 +6,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/httputils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/httputils"
 )
 
 func (api *api) notification(w http.ResponseWriter, req *http.Request) {

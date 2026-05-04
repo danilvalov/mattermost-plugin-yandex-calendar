@@ -10,12 +10,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine/mock_plugin_api"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote/mock_remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store/mock_store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot/mock_bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/mock_plugin_api"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote/mock_remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store/mock_store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot/mock_bot"
 )
 
 const (
@@ -104,11 +104,12 @@ func GetMockCreateEventPayload(allDay bool, attendees []string, date, startTime,
 }
 
 func GetCurrentTimeRequestBodyJSON(channelID string) string {
-	// Use UTC to match test mailbox timezone and add extra buffer to avoid edge cases
-	currentTime := time.Now().UTC().Add(24 * time.Hour)
-	date := currentTime.Format("2006-01-02")
-	startTime := currentTime.Add(time.Hour).Format("15:04")
-	endTime := currentTime.Add(2 * time.Hour).Format("15:04")
+	// Anchor at noon UTC several days out, then add hours so date + times never
+	// disagree when hours roll past midnight relative to a separate date string.
+	mid := time.Now().UTC().Add(192 * time.Hour).Truncate(24 * time.Hour).Add(12 * time.Hour)
+	date := mid.Format("2006-01-02")
+	startTime := mid.Add(1 * time.Hour).Format("15:04")
+	endTime := mid.Add(2 * time.Hour).Format("15:04")
 
 	return fmt.Sprintf(`{
 					"all_day": false,

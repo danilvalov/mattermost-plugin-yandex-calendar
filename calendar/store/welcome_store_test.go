@@ -11,7 +11,7 @@ import (
 
 	"github.com/mattermost/mattermost/server/public/model"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/testutil"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/testutil"
 )
 
 func TestLoadUserWelcomePost(t *testing.T) {

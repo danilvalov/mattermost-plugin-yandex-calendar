@@ -19,21 +19,22 @@ import (
 	"github.com/mattermost/mattermost/server/public/plugin"
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/api"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/command"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/config"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/engine"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/jobs"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/remote"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/store"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/telemetry"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/tracker"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/flow"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/httputils"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/oauth2connect"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/pluginapi"
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/settingspanel"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/api"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/command"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/jobs"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/telemetry"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/tracker"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/caldavconnect"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/flow"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/httputils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/oauth2connect"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/pluginapi"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/settingspanel"
 )
 
 type Env struct {
@@ -52,6 +53,14 @@ type Plugin struct {
 	env             Env
 	Templates       map[string]*template.Template
 	telemetryClient telemetry.Client
+}
+
+type caldavConnectAdapter struct {
+	env engine.Env
+}
+
+func (a caldavConnectAdapter) CompleteCalDAVConnect(mattermostUserID, email, appPassword string) error {
+	return engine.CompleteCalDAVConnect(a.env, mattermostUserID, email, appPassword)
 }
 
 func NewWithEnv(env engine.Env) *Plugin {
@@ -232,8 +241,13 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 			}
 		}
 
+		e.Dependencies.NotificationProcessor = e.notificationProcessor
+
 		e.httpHandler = httputils.NewHandler()
 		oauth2connect.Init(e.httpHandler, engine.NewOAuth2App(e.Env), config.Provider)
+		if e.Provider.Features.PasswordAuth {
+			caldavconnect.Init(e.httpHandler, caldavConnectAdapter{env: e.Env}, config.Provider, p.API)
+		}
 		flow.Init(e.httpHandler, welcomeFlow, mscalendarBot)
 		settingspanel.Init(e.httpHandler, e.Dependencies.SettingsPanel)
 		api.Init(e.httpHandler, e.Env, e.notificationProcessor)
@@ -243,6 +257,9 @@ func (p *Plugin) OnConfigurationChange() (err error) {
 			e.jobManager.AddJob(jobs.NewStatusSyncJob())
 			e.jobManager.AddJob(jobs.NewDailySummaryJob())
 			e.jobManager.AddJob(jobs.NewRenewJob())
+			e.jobManager.AddJob(jobs.NewPollNotificationsJob())
+		} else {
+			e.jobManager.SetEnv(e.Env)
 		}
 	})
 

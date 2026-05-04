@@ -6,7 +6,7 @@ package tracker
 import (
 	"github.com/mattermost/mattermost/server/public/model"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/telemetry"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/telemetry"
 )
 
 const (

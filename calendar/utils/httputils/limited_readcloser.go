@@ -6,7 +6,7 @@ package httputils
 import (
 	"io"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils"
 )
 
 type LimitReadCloser struct {

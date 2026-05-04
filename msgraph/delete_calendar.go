@@ -6,7 +6,7 @@ package msgraph
 import (
 	"github.com/pkg/errors"
 
-	"github.com/mattermost/mattermost-plugin-mscalendar/calendar/utils/bot"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 )
 
 func (c *client) DeleteCalendar(calID string) error {
