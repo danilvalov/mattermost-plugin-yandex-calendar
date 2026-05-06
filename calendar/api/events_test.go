@@ -335,6 +335,12 @@ func TestCreateEvent(t *testing.T) {
 				mockPluginAPI.EXPECT().CanLinkEventToChannel(MockChannelID, MockUserID).Return(true).Times(1)
 				mockRemote.EXPECT().MakeUserClient(gomock.Any(), &mockOAauthToken, gomock.Any(), gomock.Any(), gomock.Any()).Return(mockRemoteClient).Times(1)
 				mockRemoteClient.EXPECT().GetMailboxSettings(MockRemoteUserID).Return(&remote.MailboxSettings{TimeZone: "Invalid/TimeZone"}, nil).Times(1)
+				mockPluginAPI.EXPECT().GetMattermostUser(MockUserID).Return(&model.User{
+					Timezone: map[string]string{
+						"useAutomaticTimezone": "false",
+						"manualTimezone":       "Invalid/TimeZone",
+					},
+				}, nil).Times(1)
 				mockLogger.EXPECT().With(gomock.Any()).Return(mockLoggerWith).Times(1)
 				mockLoggerWith.EXPECT().Errorf("createEvent, error occurred while loading mailbox timezone location").Times(1)
 			},
@@ -509,6 +515,13 @@ func TestCreateEvent(t *testing.T) {
 			rec := httptest.NewRecorder()
 
 			tc.setup(req, api, mockStore, mockPoster, mockRemote, mockPluginAPI, mockLogger, mockLoggerWith, mockRemoteClient)
+			mockPluginAPI.EXPECT().GetMattermostUser(gomock.Any()).Return(&model.User{
+				Timezone: map[string]string{
+					"useAutomaticTimezone": "false",
+					"manualTimezone":       "UTC",
+				},
+			}, nil).AnyTimes()
+			mockPluginAPI.EXPECT().GetPreferenceForUser(gomock.Any(), "display", "use_military_time").Return(&model.Preference{Value: "false"}, nil).AnyTimes()
 			api.createEvent(rec, req)
 
 			tc.assertions(t, rec)

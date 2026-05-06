@@ -22,9 +22,11 @@ import (
 const (
 	calendarViewTimeWindowSize    = 10 * time.Minute
 	StatusSyncJobInterval         = 5 * time.Minute
-	upcomingEventNotificationTime = 10 * time.Minute
+	upcomingEventNotificationTime = 5 * time.Minute
 
-	upcomingEventNotificationWindow = (StatusSyncJobInterval * 11) / 10 // 110% of the interval
+	// We target a reminder exactly at the configured lead time and keep a tiny
+	// tolerance to absorb scheduler/runtime jitter between `time.Now()` calls.
+	upcomingEventNotificationWindow = 30 * time.Second
 	logTruncateMsg                  = "We've truncated the logs due to too many messages"
 	logTruncateLimit                = 5
 )
@@ -583,15 +585,17 @@ func (m *mscalendar) GetCalendarViews(users []*store.User) ([]*remote.ViewCalend
 
 func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*remote.Event) {
 	var timezone string
+	var isMilitary bool
 	for _, event := range events {
 		if event.IsCancelled {
 			continue
 		}
-		upcomingTime := time.Now().Add(upcomingEventNotificationTime)
+		now := time.Now()
+		upcomingTime := now.Add(upcomingEventNotificationTime)
 		start := event.Start.Time()
 		diff := start.Sub(upcomingTime)
 
-		if (diff < upcomingEventNotificationWindow) && (diff > -upcomingEventNotificationWindow) {
+		if start.After(now) && diff <= upcomingEventNotificationWindow && diff >= -upcomingEventNotificationWindow {
 			var err error
 			if timezone == "" {
 				timezone, err = m.GetTimezoneByID(mattermostUserID)
@@ -599,9 +603,10 @@ func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*rem
 					m.Logger.Warnf("notifyUpcomingEvents error getting timezone. err=%v", err)
 					return
 				}
+				isMilitary = m.isMilitaryTimeByUserID(mattermostUserID)
 			}
 
-			_, attachment, err := views.RenderUpcomingEventAsAttachment(event, timezone, m.I18n, mattermostUserID)
+			_, attachment, err := views.RenderUpcomingEventAsAttachmentWithTimeFormat(event, timezone, isMilitary, m.I18n, mattermostUserID)
 			if err != nil {
 				m.Logger.Warnf("notifyUpcomingEvent error rendering schedule item. err=%v", err)
 				continue
@@ -629,7 +634,7 @@ func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*rem
 						ChannelId: channelID,
 						Message:   m.Tr(mattermostUserID, "ycal.view.upcoming_channel_stub", "Upcoming event", nil),
 					}
-					attachment, errRender := views.RenderEventAsAttachment(event, timezone, m.I18n, mattermostUserID, views.ShowTimezoneOption(timezone))
+					attachment, errRender := views.RenderEventAsAttachmentWithTimeFormat(event, timezone, isMilitary, m.I18n, mattermostUserID, views.ShowTimezoneOptionWithTimeFormat(timezone, isMilitary))
 					if errRender != nil {
 						m.Logger.With(bot.LogContext{"err": errRender}).Errorf("notifyUpcomingEvents error rendering channel post")
 						continue
@@ -644,6 +649,17 @@ func (m *mscalendar) notifyUpcomingEvents(mattermostUserID string, events []*rem
 			}
 		}
 	}
+}
+
+func (m *mscalendar) isMilitaryTimeByUserID(mattermostUserID string) bool {
+	pref, err := m.PluginAPI.GetPreferenceForUser(mattermostUserID, preferenceCategoryDisplay, preferenceUseMilitaryTime)
+	if err != nil || pref == nil {
+		pref, err = m.PluginAPI.GetPreferenceForUser(mattermostUserID, preferenceCategoryDisplaySettings, preferenceUseMilitaryTime)
+	}
+	if err != nil || pref == nil {
+		return m.isMilitaryTimeFromAllPreferences(mattermostUserID)
+	}
+	return pref.Value == "true"
 }
 
 func filterBusyAndAttendeeEvents(events []*remote.Event) []*remote.Event {

@@ -41,14 +41,14 @@ func (m *mscalendar) GetDailySummarySettingsForUser(user *User) (*store.DailySum
 }
 
 func (m *mscalendar) SetDailySummaryPostTime(user *User, timeStr string) (*store.DailySummaryUserSettings, error) {
-	timeStr = convertMeridiemToUpperCase(timeStr)
+	timeStr = normalizeDailySummaryPostTime(timeStr)
 
 	err := m.Filter(withUserExpanded(user))
 	if err != nil {
 		return nil, err
 	}
 
-	t, err := time.Parse(time.Kitchen, timeStr)
+	t, err := parseDailySummaryClock(timeStr)
 	if err != nil {
 		return nil, errors.New("Invalid time value: " + timeStr)
 	}
@@ -206,7 +206,7 @@ func (m *mscalendar) ProcessAllDailySummary(now time.Time) error {
 			// Should never reach this point
 			continue
 		}
-		postStr, err := views.RenderCalendarView(res.Events, dsum.Timezone, m.I18n, user.MattermostUserID)
+		postStr, err := views.RenderCalendarViewWithTimeFormat(res.Events, dsum.Timezone, m.isMilitaryTimeByUserID(user.MattermostUserID), m.I18n, user.MattermostUserID)
 		if err != nil {
 			m.Logger.Warnf("Error rendering user %s calendar. err=%v", user.MattermostUserID, err)
 		}
@@ -238,7 +238,7 @@ func (m *mscalendar) GetDaySummaryForUser(day time.Time, user *User) (string, er
 
 	events := m.excludeDeclinedEvents(calendarData)
 
-	messageString, err := views.RenderCalendarView(events, timezone, m.I18n, user.MattermostUserID)
+	messageString, err := views.RenderCalendarViewWithTimeFormat(events, timezone, m.isMilitaryTimeByUserID(user.MattermostUserID), m.I18n, user.MattermostUserID)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to render daily summary")
 	}
@@ -271,7 +271,7 @@ func shouldPostDailySummary(dsum *store.DailySummaryUserSettings, now time.Time)
 	if err != nil {
 		return false, err
 	}
-	t, err := time.ParseInLocation(time.Kitchen, dsum.PostTime, loc)
+	t, err := parseDailySummaryClockInLocation(dsum.PostTime, loc)
 	if err != nil {
 		return false, err
 	}
@@ -346,4 +346,46 @@ func convertMeridiemToUpperCase(timeStr string) string {
 	minute := fmt.Sprintf("%02d", minuteInt) // Ensure 2-digit minute
 
 	return hour + ":" + minute + meridiem
+}
+
+func normalizeDailySummaryPostTime(timeStr string) string {
+	if hasMeridiemSuffix(timeStr) {
+		return convertMeridiemToUpperCase(timeStr)
+	}
+	return timeStr
+}
+
+func hasMeridiemSuffix(timeStr string) bool {
+	if len(timeStr) < 2 {
+		return false
+	}
+	suffix := strings.ToUpper(timeStr[len(timeStr)-2:])
+	return suffix == "AM" || suffix == "PM"
+}
+
+func parseDailySummaryClock(timeStr string) (time.Time, error) {
+	if hasMeridiemSuffix(timeStr) {
+		return time.Parse(time.Kitchen, convertMeridiemToUpperCase(timeStr))
+	}
+
+	t, err := time.Parse("15:04", timeStr)
+	if err == nil {
+		return t, nil
+	}
+
+	// Accept single-digit hour for manual command input, e.g. "9:00".
+	return time.Parse("3:04", timeStr)
+}
+
+func parseDailySummaryClockInLocation(timeStr string, loc *time.Location) (time.Time, error) {
+	if hasMeridiemSuffix(timeStr) {
+		return time.ParseInLocation(time.Kitchen, convertMeridiemToUpperCase(timeStr), loc)
+	}
+
+	t, err := time.ParseInLocation("15:04", timeStr, loc)
+	if err == nil {
+		return t, nil
+	}
+
+	return time.ParseInLocation("3:04", timeStr, loc)
 }

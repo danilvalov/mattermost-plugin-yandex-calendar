@@ -5,7 +5,10 @@ package engine
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -17,6 +20,12 @@ import (
 )
 
 const maxQueueSize = 1024
+const notificationDedupeTTL = 2 * time.Minute
+const (
+	preferenceCategoryDisplay         = "display"
+	preferenceCategoryDisplaySettings = "display_settings"
+	preferenceUseMilitaryTime         = "use_military_time"
+)
 
 const (
 	FieldSubject        = "Subject"
@@ -166,6 +175,25 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 			return err
 		}
 	}
+	if n == nil || n.Event == nil || n.Event.ICalUID == "" {
+		processor.Logger.Warnf("webhook notification: skipped invalid event payload")
+		return nil
+	}
+
+	dedupeKey := notificationDedupeKey(creator.MattermostUserID, n)
+	reserved, err := processor.Store.TryReserveNotification(dedupeKey, notificationDedupeTTL)
+	if err != nil {
+		return err
+	}
+	if !reserved {
+		processor.Logger.With(bot.LogContext{
+			"MattermostUserID": creator.MattermostUserID,
+			"SubscriptionID":   n.SubscriptionID,
+			"EventID":          n.Event.ID,
+			"EventICalUID":     n.Event.ICalUID,
+		}).Debugf("webhook notification: duplicate suppressed.")
+		return nil
+	}
 
 	var sa *model.SlackAttachment
 	prior, err := processor.Store.LoadUserEvent(creator.MattermostUserID, n.Event.ICalUID)
@@ -173,15 +201,11 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 		return err
 	}
 
-	mailSettings, err := client.GetMailboxSettings(sub.Remote.CreatorID)
-	if err != nil {
-		return err
-	}
-	timezone := mailSettings.TimeZone
+	timezone, isMilitary := processor.getUserTimeInfo(creator.MattermostUserID)
 
 	if prior != nil {
 		var changed bool
-		changed, sa = processor.updatedEventSlackAttachment(creator.MattermostUserID, n, prior.Remote, timezone)
+		changed, sa = processor.updatedEventSlackAttachment(creator.MattermostUserID, n, prior.Remote, timezone, isMilitary)
 		if !changed {
 			processor.Logger.With(bot.LogContext{
 				"MattermostUserID": creator.MattermostUserID,
@@ -193,7 +217,7 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 			return nil
 		}
 	} else {
-		sa = processor.newEventSlackAttachment(creator.MattermostUserID, n, timezone)
+		sa = processor.newEventSlackAttachment(creator.MattermostUserID, n, timezone, isMilitary)
 		prior = &store.Event{}
 	}
 
@@ -214,4 +238,64 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 	}).Debugf("Notified: %s.", sa.Title)
 
 	return nil
+}
+
+func notificationDedupeKey(mattermostUserID string, n *remote.Notification) string {
+	start := ""
+	if n.Event.Start != nil {
+		start = n.Event.Start.String()
+	}
+	end := ""
+	if n.Event.End != nil {
+		end = n.Event.End.String()
+	}
+	location := ""
+	if n.Event.Location != nil {
+		location = n.Event.Location.DisplayName
+	}
+
+	signature := fmt.Sprintf("%s|%s|%s|%s|%s|%t|%s",
+		n.ChangeType,
+		n.Event.ICalUID,
+		n.Event.Subject,
+		start,
+		end,
+		n.Event.IsCancelled,
+		location,
+	)
+	sum := sha256.Sum256([]byte(signature))
+	return mattermostUserID + "_" + hex.EncodeToString(sum[:])
+}
+
+func (processor *notificationProcessor) getUserTimeInfo(mattermostUserID string) (timezone string, isMilitary bool) {
+	timezone = "UTC"
+
+	user, err := processor.PluginAPI.GetMattermostUser(mattermostUserID)
+	if err == nil && user != nil && user.Timezone != nil {
+		if user.Timezone["useAutomaticTimezone"] == "true" {
+			timezone = user.Timezone["automaticTimezone"]
+		} else if user.Timezone["manualTimezone"] != "" {
+			timezone = user.Timezone["manualTimezone"]
+		}
+	}
+
+	pref, err := processor.PluginAPI.GetPreferenceForUser(mattermostUserID, preferenceCategoryDisplay, preferenceUseMilitaryTime)
+	if err != nil || pref == nil {
+		pref, err = processor.PluginAPI.GetPreferenceForUser(mattermostUserID, preferenceCategoryDisplaySettings, preferenceUseMilitaryTime)
+	}
+	if err != nil {
+		prefs, allErr := processor.PluginAPI.GetPreferencesForUser(mattermostUserID)
+		if allErr == nil {
+			for _, p := range prefs {
+				if (p.Category == preferenceCategoryDisplay || p.Category == preferenceCategoryDisplaySettings) && p.Name == preferenceUseMilitaryTime {
+					isMilitary = p.Value == "true"
+					break
+				}
+			}
+		}
+	} else if pref != nil {
+		isMilitary = pref.Value == "true"
+	}
+
+	return timezone, isMilitary
 }

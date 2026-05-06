@@ -40,9 +40,8 @@ func (c *client) queryRemoteEvents(start, end time.Time) ([]*remote.Event, error
 			if err != nil || ev == nil || ev.ICalUID == "" {
 				continue
 			}
-			if ev.ID == "" {
-				ev.ID = obj.Path
-			}
+			ev.ID = obj.Path
+			applyCurrentUserContext(ev, c.email)
 			out = append(out, ev)
 		}
 	}

@@ -22,7 +22,7 @@ func (processor *notificationProcessor) notifyFieldTitle(mattermostUserID, field
 	case FieldSubject:
 		return processor.Tr(mattermostUserID, "ycal.notify.field.subject", "Subject", nil)
 	case FieldBodyPreview:
-		return processor.Tr(mattermostUserID, "ycal.notify.field.body_preview", "BodyPreview", nil)
+		return processor.Tr(mattermostUserID, "ycal.notify.field.body_preview", "Description", nil)
 	case FieldImportance:
 		return processor.Tr(mattermostUserID, "ycal.notify.field.importance", "Importance", nil)
 	case FieldDuration:
@@ -46,22 +46,31 @@ func (processor *notificationProcessor) newSlackAttachment(mattermostUserID stri
 	title := views.EnsureSubject(processor.I18n, mattermostUserID, n.Event.Subject)
 	titleLink := n.Event.Weblink
 	text := n.Event.BodyPreview
+	if strings.TrimSpace(text) == "" && n.Event.Body != nil {
+		text = n.Event.Body.Content
+	}
+	organizerName := ""
+	organizerAddress := ""
+	if n.Event.Organizer != nil && n.Event.Organizer.EmailAddress != nil {
+		organizerName = n.Event.Organizer.EmailAddress.Name
+		organizerAddress = n.Event.Organizer.EmailAddress.Address
+	}
 	return &model.SlackAttachment{
-		AuthorName: n.Event.Organizer.EmailAddress.Name,
-		AuthorLink: "mailto:" + n.Event.Organizer.EmailAddress.Address,
+		AuthorName: organizerName,
+		AuthorLink: "mailto:" + organizerAddress,
 		TitleLink:  titleLink,
 		Title:      title,
-		Text:       views.MarkdownToHTMLEntities(text),
-		Fallback:   fmt.Sprintf("[%s](%s): %s", title, titleLink, views.MarkdownToHTMLEntities(text)),
+		Text:       views.LinkifyAndEscapeText(text),
+		Fallback:   fmt.Sprintf("[%s](%s): %s", title, titleLink, views.LinkifyAndEscapeText(text)),
 	}
 }
 
-func (processor *notificationProcessor) newEventSlackAttachment(mattermostUserID string, n *remote.Notification, timezone string) *model.SlackAttachment {
+func (processor *notificationProcessor) newEventSlackAttachment(mattermostUserID string, n *remote.Notification, timezone string, isMilitary bool) *model.SlackAttachment {
 	sa := processor.newSlackAttachment(mattermostUserID, n)
 	plainTitle := sa.Title
 	sa.Title = processor.Tr(mattermostUserID, "ycal.notify.title_new", "(new) {{.Title}}", map[string]any{"Title": plainTitle})
 
-	fields := processor.eventToFields(mattermostUserID, n.Event, timezone)
+	fields := processor.eventToFields(mattermostUserID, n.Event, timezone, isMilitary)
 	for _, k := range notificationFieldOrder {
 		v := fields[k]
 
@@ -78,13 +87,13 @@ func (processor *notificationProcessor) newEventSlackAttachment(mattermostUserID
 	return sa
 }
 
-func (processor *notificationProcessor) updatedEventSlackAttachment(mattermostUserID string, n *remote.Notification, prior *remote.Event, timezone string) (bool, *model.SlackAttachment) {
+func (processor *notificationProcessor) updatedEventSlackAttachment(mattermostUserID string, n *remote.Notification, prior *remote.Event, timezone string, isMilitary bool) (bool, *model.SlackAttachment) {
 	sa := processor.newSlackAttachment(mattermostUserID, n)
 	plainTitle := sa.Title
 	sa.Title = processor.Tr(mattermostUserID, "ycal.notify.title_updated", "(updated) {{.Title}}", map[string]any{"Title": plainTitle})
 
-	newFields := processor.eventToFields(mattermostUserID, n.Event, timezone)
-	priorFields := processor.eventToFields(mattermostUserID, prior, timezone)
+	newFields := processor.eventToFields(mattermostUserID, n.Event, timezone, isMilitary)
+	priorFields := processor.eventToFields(mattermostUserID, prior, timezone, isMilitary)
 	changed, added, updated, deleted := fields.Diff(priorFields, newFields)
 	if !changed {
 		return false, nil
@@ -200,7 +209,7 @@ func (processor *notificationProcessor) newPostActionForEventResponse(mattermost
 	return []*model.PostAction{pa}
 }
 
-func (processor *notificationProcessor) eventToFields(mattermostUserID string, e *remote.Event, timezone string) fields.Fields {
+func (processor *notificationProcessor) eventToFields(mattermostUserID string, e *remote.Event, timezone string, isMilitary bool) fields.Fields {
 	notDef := processor.Tr(mattermostUserID, "ycal.notify.not_defined", "Not defined", nil)
 	noneStr := processor.Tr(mattermostUserID, "ycal.notify.none", "None", nil)
 	naStr := processor.Tr(mattermostUserID, "ycal.notify.na", "n/a", nil)
@@ -216,26 +225,25 @@ func (processor *notificationProcessor) eventToFields(mattermostUserID string, e
 		tStart := dtStart.Time()
 		tEnd := dtEnd.Time()
 
-		startFormat := "Monday, January 02"
-		endDateFormat := "Monday, January 02"
-
 		if isAllDayEvent {
-			return tStart, tEnd, tStart.Format(startFormat)+": "+allDayLabel
+			return tStart, tEnd, processor.formatLocalizedWeekDate(mattermostUserID, tStart, false)+": "+allDayLabel
 		}
 
-		if tStart.Year() != time.Now().Year() || tEnd.Year() != time.Now().Year() {
-			startFormat += ", 2006"
-			endDateFormat += ", 2006"
-		}
+		includeStartYear := tStart.Year() != time.Now().Year() || tEnd.Year() != time.Now().Year()
+		includeEndYear := includeStartYear
 
-		startFormat += " · " + time.Kitchen
+		timeLayout := time.Kitchen
+		if isMilitary {
+			timeLayout = "15:04"
+		}
+		startDate := processor.formatLocalizedWeekDate(mattermostUserID, tStart, includeStartYear)
 
 		var formatted string
 		if tStart.Year() != tEnd.Year() || tStart.Month() != tEnd.Month() || tStart.Day() != tEnd.Day() {
-			endDateFormat += " · " + time.Kitchen
-			formatted = tStart.Format(startFormat) + " - " + tEnd.Format(endDateFormat)
+			endDate := processor.formatLocalizedWeekDate(mattermostUserID, tEnd, includeEndYear)
+			formatted = startDate + " · " + tStart.Format(timeLayout) + " - " + endDate + " · " + tEnd.Format(timeLayout)
 		} else {
-			formatted = tStart.Format(startFormat) + " - " + tEnd.Format(time.Kitchen)
+			formatted = startDate + " · " + tStart.Format(timeLayout) + " - " + tEnd.Format(timeLayout)
 		}
 
 		return tStart, tEnd, formatted
@@ -278,6 +286,9 @@ func (processor *notificationProcessor) eventToFields(mattermostUserID string, e
 
 	attendees := []fields.Value{}
 	for _, a := range e.Attendees {
+		if a == nil || a.EmailAddress == nil {
+			continue
+		}
 		attendees = append(attendees, fields.NewStringValue(
 			fmt.Sprintf("[%s](mailto:%s)",
 				a.EmailAddress.Name, a.EmailAddress.Address)))
@@ -293,20 +304,128 @@ func (processor *notificationProcessor) eventToFields(mattermostUserID string, e
 		}
 		return s
 	}
+	organizerName := notDef
+	organizerAddress := ""
+	if e.Organizer != nil && e.Organizer.EmailAddress != nil {
+		organizerName = valOr(e.Organizer.EmailAddress.Name)
+		organizerAddress = e.Organizer.EmailAddress.Address
+	}
+
+	locationDisplayName := notDef
+	if e.Location != nil {
+		locationDisplayName = valOr(e.Location.DisplayName)
+	}
 
 	ff := fields.Fields{
 		FieldSubject:     fields.NewStringValue(views.EnsureSubject(processor.I18n, mattermostUserID, e.Subject)),
-		FieldBodyPreview: fields.NewStringValue(views.MarkdownToHTMLEntities(valOr(e.BodyPreview))),
+		FieldBodyPreview: fields.NewStringValue(views.LinkifyAndEscapeText(valOr(bodyText(e)))),
 		FieldImportance:  fields.NewStringValue(valOr(e.Importance)),
 		FieldWhen:        fields.NewStringValue(valOr(formattedDate)),
 		FieldDuration:    fields.NewStringValue(valOr(dur)),
 		FieldOrganizer: fields.NewStringValue(
 			fmt.Sprintf("[%s](mailto:%s)",
-				e.Organizer.EmailAddress.Name, e.Organizer.EmailAddress.Address)),
-		FieldLocation:       fields.NewStringValue(views.MarkdownToHTMLEntities(valOr(e.Location.DisplayName))),
-		FieldResponseStatus: fields.NewStringValue(e.ResponseStatus.Response),
-		FieldAttendees:        fields.NewMultiValue(attendees...),
+				organizerName, organizerAddress)),
+		FieldLocation:       fields.NewStringValue(views.MarkdownToHTMLEntities(locationDisplayName)),
+		FieldResponseStatus: fields.NewStringValue(processor.localizeResponseStatus(mattermostUserID, e.ResponseStatus)),
+		FieldAttendees:      fields.NewMultiValue(attendees...),
 	}
 
 	return ff
+}
+
+func (processor *notificationProcessor) localizedWeekday(mattermostUserID string, weekday time.Weekday) string {
+	switch weekday {
+	case time.Monday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.monday", "Monday", nil)
+	case time.Tuesday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.tuesday", "Tuesday", nil)
+	case time.Wednesday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.wednesday", "Wednesday", nil)
+	case time.Thursday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.thursday", "Thursday", nil)
+	case time.Friday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.friday", "Friday", nil)
+	case time.Saturday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.saturday", "Saturday", nil)
+	case time.Sunday:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.weekday.sunday", "Sunday", nil)
+	default:
+		return ""
+	}
+}
+
+func (processor *notificationProcessor) localizedMonth(mattermostUserID string, month time.Month) string {
+	switch month {
+	case time.January:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.january", "January", nil)
+	case time.February:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.february", "February", nil)
+	case time.March:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.march", "March", nil)
+	case time.April:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.april", "April", nil)
+	case time.May:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.may", "May", nil)
+	case time.June:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.june", "June", nil)
+	case time.July:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.july", "July", nil)
+	case time.August:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.august", "August", nil)
+	case time.September:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.september", "September", nil)
+	case time.October:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.october", "October", nil)
+	case time.November:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.november", "November", nil)
+	case time.December:
+		return processor.Tr(mattermostUserID, "ycal.notify.date.month.december", "December", nil)
+	default:
+		return ""
+	}
+}
+
+func (processor *notificationProcessor) formatLocalizedWeekDate(mattermostUserID string, t time.Time, includeYear bool) string {
+	data := map[string]any{
+		"Weekday": processor.localizedWeekday(mattermostUserID, t.Weekday()),
+		"Day":     fmt.Sprintf("%02d", t.Day()),
+		"Month":   processor.localizedMonth(mattermostUserID, t.Month()),
+		"Year":    strconv.Itoa(t.Year()),
+	}
+
+	if includeYear {
+		return processor.Tr(mattermostUserID, "ycal.notify.date.format_with_year", "{{.Weekday}} {{.Month}} {{.Day}}, {{.Year}}", data)
+	}
+
+	return processor.Tr(mattermostUserID, "ycal.notify.date.format_without_year", "{{.Weekday}} {{.Month}} {{.Day}}", data)
+}
+
+func bodyText(e *remote.Event) string {
+	if e == nil {
+		return ""
+	}
+	if strings.TrimSpace(e.BodyPreview) != "" {
+		return e.BodyPreview
+	}
+	if e.Body != nil {
+		return e.Body.Content
+	}
+	return ""
+}
+
+func (processor *notificationProcessor) localizeResponseStatus(mattermostUserID string, status *remote.EventResponseStatus) string {
+	if status == nil {
+		return processor.Tr(mattermostUserID, "ycal.notify.option.not_responded", "Not responded", nil)
+	}
+
+	switch status.Response {
+	case remote.EventResponseStatusAccepted:
+		return processor.Tr(mattermostUserID, "ycal.notify.option.yes", "Yes", nil)
+	case remote.EventResponseStatusDeclined:
+		return processor.Tr(mattermostUserID, "ycal.notify.option.no", "No", nil)
+	case remote.EventResponseStatusTentative:
+		return processor.Tr(mattermostUserID, "ycal.notify.option.maybe", "Maybe", nil)
+	default:
+		return processor.Tr(mattermostUserID, "ycal.notify.option.not_responded", "Not responded", nil)
+	}
 }

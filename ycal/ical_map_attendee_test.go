@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	"github.com/emersion/go-ical"
 )
 
@@ -72,5 +73,31 @@ END:VCALENDAR`
 	}
 	if g, w := ev.Attendees[1].EmailAddress.Name, "Named User"; g != w {
 		t.Fatalf("attendee1 Name: got %q want %q", g, w)
+	}
+}
+
+func TestApplyCurrentUserContext(t *testing.T) {
+	t.Parallel()
+
+	ev := &remote.Event{
+		Organizer: &remote.Attendee{
+			EmailAddress: &remote.EmailAddress{Address: "boss@example.com"},
+		},
+		ResponseStatus: &remote.EventResponseStatus{Response: remote.EventResponseStatusNotAnswered},
+		Attendees: []*remote.Attendee{
+			{
+				EmailAddress: &remote.EmailAddress{Address: "member@example.com"},
+				Status:       &remote.EventResponseStatus{Response: remote.EventResponseStatusAccepted},
+			},
+		},
+	}
+
+	applyCurrentUserContext(ev, "member@example.com")
+
+	if ev.IsOrganizer {
+		t.Fatal("expected not organizer")
+	}
+	if ev.ResponseStatus == nil || ev.ResponseStatus.Response != remote.EventResponseStatusAccepted {
+		t.Fatalf("unexpected response status: %#v", ev.ResponseStatus)
 	}
 }

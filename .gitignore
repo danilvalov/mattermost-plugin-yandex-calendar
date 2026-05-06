@@ -1,4 +1,5 @@
 dist
+node_modules
 server/manifest.go
 .DS_Store
 .npminstall

@@ -1,0 +1,130 @@
+[
+    {
+        "id": "ycal.ui.calendar.title",
+        "translation": "Calendar"
+    },
+    {
+        "id": "ycal.ui.calendar.loading",
+        "translation": "Loading calendar..."
+    },
+    {
+        "id": "ycal.ui.calendar.load_error",
+        "translation": "Failed to load calendar data."
+    },
+    {
+        "id": "ycal.ui.calendar.connect_required",
+        "translation": "Connect your calendar account first using /ycal connect."
+    },
+    {
+        "id": "ycal.ui.calendar.open_button",
+        "translation": "Calendar"
+    },
+    {
+        "id": "ycal.ui.calendar.create_prompt",
+        "translation": "New event title"
+    },
+    {
+        "id": "ycal.ui.calendar.delete_confirm",
+        "translation": "Delete this event?"
+    },
+    {
+        "id": "ycal.ui.calendar.create_failed",
+        "translation": "Could not create event."
+    },
+    {
+        "id": "ycal.ui.calendar.update_failed",
+        "translation": "Could not update event."
+    },
+    {
+        "id": "ycal.ui.calendar.delete_failed",
+        "translation": "Could not delete event."
+    },
+    {
+        "id": "ycal.notify.date.weekday.monday",
+        "translation": "Monday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.tuesday",
+        "translation": "Tuesday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.wednesday",
+        "translation": "Wednesday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.thursday",
+        "translation": "Thursday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.friday",
+        "translation": "Friday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.saturday",
+        "translation": "Saturday"
+    },
+    {
+        "id": "ycal.notify.date.weekday.sunday",
+        "translation": "Sunday"
+    },
+    {
+        "id": "ycal.notify.date.month.january",
+        "translation": "January"
+    },
+    {
+        "id": "ycal.notify.date.month.february",
+        "translation": "February"
+    },
+    {
+        "id": "ycal.notify.date.month.march",
+        "translation": "March"
+    },
+    {
+        "id": "ycal.notify.date.month.april",
+        "translation": "April"
+    },
+    {
+        "id": "ycal.notify.date.month.may",
+        "translation": "May"
+    },
+    {
+        "id": "ycal.notify.date.month.june",
+        "translation": "June"
+    },
+    {
+        "id": "ycal.notify.date.month.july",
+        "translation": "July"
+    },
+    {
+        "id": "ycal.notify.date.month.august",
+        "translation": "August"
+    },
+    {
+        "id": "ycal.notify.date.month.september",
+        "translation": "September"
+    },
+    {
+        "id": "ycal.notify.date.month.october",
+        "translation": "October"
+    },
+    {
+        "id": "ycal.notify.date.month.november",
+        "translation": "November"
+    },
+    {
+        "id": "ycal.notify.date.month.december",
+        "translation": "December"
+    },
+    {
+        "id": "ycal.notify.date.format_without_year",
+        "translation": "{{.Weekday}} {{.Month}} {{.Day}}"
+    },
+    {
+        "id": "ycal.notify.date.format_with_year",
+        "translation": "{{.Weekday}} {{.Month}} {{.Day}}, {{.Year}}"
+    },
+    {
+        "id": "ycal.notify.field.body_preview",
+        "translation": "Description"
+    }
+]

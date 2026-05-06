@@ -155,7 +155,7 @@ func TestExpandMattermostUser(t *testing.T) {
 }
 
 func TestGetTimezone(t *testing.T) {
-	mscalendar, mockStore, _, _, _, mockClient, _ := GetMockSetup(t)
+	mscalendar, mockStore, _, _, mockPluginAPI, mockClient, _ := GetMockSetup(t)
 
 	tests := []struct {
 		name       string
@@ -178,6 +178,7 @@ func TestGetTimezone(t *testing.T) {
 			name: "error getting the mailbox setting",
 			user: GetMockUser(model.NewPointer(MockRemoteUserID), nil, MockMMUserID, GetMockStoreSettings()),
 			setupMock: func() {
+				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID).Return(&model.User{}, nil).Times(1)
 				mockClient.EXPECT().GetMailboxSettings(MockRemoteUserID).Return(nil, errors.New("error occurred while getting the mailbox settings")).Times(1)
 			},
 			assertions: func(t *testing.T, err error) {
@@ -189,6 +190,7 @@ func TestGetTimezone(t *testing.T) {
 			name: "success getting mailbox setting",
 			user: GetMockUser(model.NewPointer(MockRemoteUserID), nil, MockMMUserID, GetMockStoreSettings()),
 			setupMock: func() {
+				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID).Return(&model.User{}, nil).Times(1)
 				mockClient.EXPECT().GetMailboxSettings(MockRemoteUserID).Return(&remote.MailboxSettings{TimeZone: MockTimeZone}, nil).Times(1)
 			},
 			assertions: func(t *testing.T, err error) {

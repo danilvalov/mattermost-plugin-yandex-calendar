@@ -245,7 +245,7 @@
     },
     {
         "id": "ycal.notify.field.body_preview",
-        "translation": "Текст"
+        "translation": "Описание"
     },
     {
         "id": "ycal.notify.field.importance",
@@ -334,6 +334,90 @@
     {
         "id": "ycal.notify.duration_minutes",
         "translation": "{{.Count}} мин"
+    },
+    {
+        "id": "ycal.notify.date.weekday.monday",
+        "translation": "Понедельник"
+    },
+    {
+        "id": "ycal.notify.date.weekday.tuesday",
+        "translation": "Вторник"
+    },
+    {
+        "id": "ycal.notify.date.weekday.wednesday",
+        "translation": "Среда"
+    },
+    {
+        "id": "ycal.notify.date.weekday.thursday",
+        "translation": "Четверг"
+    },
+    {
+        "id": "ycal.notify.date.weekday.friday",
+        "translation": "Пятница"
+    },
+    {
+        "id": "ycal.notify.date.weekday.saturday",
+        "translation": "Суббота"
+    },
+    {
+        "id": "ycal.notify.date.weekday.sunday",
+        "translation": "Воскресенье"
+    },
+    {
+        "id": "ycal.notify.date.month.january",
+        "translation": "января"
+    },
+    {
+        "id": "ycal.notify.date.month.february",
+        "translation": "февраля"
+    },
+    {
+        "id": "ycal.notify.date.month.march",
+        "translation": "марта"
+    },
+    {
+        "id": "ycal.notify.date.month.april",
+        "translation": "апреля"
+    },
+    {
+        "id": "ycal.notify.date.month.may",
+        "translation": "мая"
+    },
+    {
+        "id": "ycal.notify.date.month.june",
+        "translation": "июня"
+    },
+    {
+        "id": "ycal.notify.date.month.july",
+        "translation": "июля"
+    },
+    {
+        "id": "ycal.notify.date.month.august",
+        "translation": "августа"
+    },
+    {
+        "id": "ycal.notify.date.month.september",
+        "translation": "сентября"
+    },
+    {
+        "id": "ycal.notify.date.month.october",
+        "translation": "октября"
+    },
+    {
+        "id": "ycal.notify.date.month.november",
+        "translation": "ноября"
+    },
+    {
+        "id": "ycal.notify.date.month.december",
+        "translation": "декабря"
+    },
+    {
+        "id": "ycal.notify.date.format_without_year",
+        "translation": "{{.Weekday}}, {{.Day}} {{.Month}}"
+    },
+    {
+        "id": "ycal.notify.date.format_with_year",
+        "translation": "{{.Weekday}}, {{.Day}} {{.Month}} {{.Year}}"
     },
     {
         "id": "ycal.calendar.invite_unlinked",

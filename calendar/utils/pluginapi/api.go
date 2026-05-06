@@ -106,6 +106,22 @@ func (a *API) GetMattermostUser(mattermostUserID string) (*model.User, error) {
 	return mmuser, nil
 }
 
+func (a *API) GetPreferenceForUser(userID, category, name string) (*model.Preference, error) {
+	pref, appErr := a.api.GetPreferenceForUser(userID, category, name)
+	if appErr != nil {
+		return nil, appErr
+	}
+	return &pref, nil
+}
+
+func (a *API) GetPreferencesForUser(userID string) (model.Preferences, error) {
+	prefs, appErr := a.api.GetPreferencesForUser(userID)
+	if appErr != nil {
+		return nil, appErr
+	}
+	return prefs, nil
+}
+
 func (a *API) GetMattermostUserTeams(mattermostUserID string) ([]*model.Team, error) {
 	teams, err := a.api.GetTeamsForUser(mattermostUserID)
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/golang/mock/gomock"
+	"github.com/mattermost/mattermost/server/public/model"
 	"golang.org/x/oauth2"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
@@ -214,5 +215,50 @@ func TestProcessNotificationOverflow(t *testing.T) {
 		}
 		err := processor.Enqueue(&remote.Notification{})
 		require.Error(t, err)
+	})
+}
+
+func TestGetUserTimeInfo(t *testing.T) {
+	t.Run("uses automatic timezone and military preference", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPluginAPI := mock_plugin_api.NewMockPluginAPI(ctrl)
+		p := &notificationProcessor{
+			Env: Env{Dependencies: &Dependencies{PluginAPI: mockPluginAPI}},
+		}
+
+		mockPluginAPI.EXPECT().GetMattermostUser("u1").Return(&model.User{
+			Timezone: map[string]string{
+				"useAutomaticTimezone": "true",
+				"automaticTimezone":    "Europe/Moscow",
+			},
+		}, nil).Times(1)
+		mockPluginAPI.EXPECT().GetPreferenceForUser("u1", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{
+			Value: "true",
+		}, nil).Times(1)
+
+		timezone, isMilitary := p.getUserTimeInfo("u1")
+		require.Equal(t, "Europe/Moscow", timezone)
+		require.True(t, isMilitary)
+	})
+
+	t.Run("falls back to UTC and 12-hour format", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockPluginAPI := mock_plugin_api.NewMockPluginAPI(ctrl)
+		p := &notificationProcessor{
+			Env: Env{Dependencies: &Dependencies{PluginAPI: mockPluginAPI}},
+		}
+
+		mockPluginAPI.EXPECT().GetMattermostUser("u2").Return(nil, fmt.Errorf("boom")).Times(1)
+		mockPluginAPI.EXPECT().GetPreferenceForUser("u2", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(nil, fmt.Errorf("boom")).Times(1)
+		mockPluginAPI.EXPECT().GetPreferenceForUser("u2", preferenceCategoryDisplaySettings, preferenceUseMilitaryTime).Return(nil, fmt.Errorf("boom")).Times(1)
+		mockPluginAPI.EXPECT().GetPreferencesForUser("u2").Return(nil, fmt.Errorf("boom")).Times(1)
+
+		timezone, isMilitary := p.getUserTimeInfo("u2")
+		require.Equal(t, "UTC", timezone)
+		require.False(t, isMilitary)
 	})
 }

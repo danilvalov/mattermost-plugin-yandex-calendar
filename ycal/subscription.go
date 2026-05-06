@@ -49,7 +49,10 @@ func (c *client) PollNotifications(remoteUserID, subscriptionID string) ([]*remo
 		return nil, nil
 	}
 
-	start := time.Now().Add(-7 * 24 * time.Hour)
+	now := time.Now()
+	// Poll only near-current and future window to avoid repeatedly notifying
+	// already finished events that are intentionally not persisted in event KV.
+	start := now.Add(-10 * time.Minute)
 	end := time.Now().Add(30 * 24 * time.Hour)
 
 	events, err := c.queryRemoteEvents(start, end)
@@ -61,6 +64,12 @@ func (c *client) PollNotifications(remoteUserID, subscriptionID string) ([]*remo
 	for _, ev := range events {
 		if ev == nil || ev.ICalUID == "" {
 			continue
+		}
+		if ev.End != nil {
+			endTime := ev.End.Time()
+			if !endTime.IsZero() && endTime.Before(now) {
+				continue
+			}
 		}
 		out = append(out, &remote.Notification{
 			SubscriptionID: subscriptionID,

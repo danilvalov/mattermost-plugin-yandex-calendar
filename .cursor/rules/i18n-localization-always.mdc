@@ -1,0 +1,14 @@
+---
+description: Обязательные правила i18n локализации для всех изменений
+alwaysApply: true
+---
+
+# i18n и локализация
+
+- Не оставляй новые пользовательские строки захардкоженными: для user-facing текста используй `Env.Tr`, `Command.T`, `views.tr`, `locale.User` или `locale.Server` по месту вызова.
+- Сохраняй формат ключей как в проекте: `ycal.<scope>.<entity>` (например, `ycal.notify.*`, `ycal.cmd.*`, `ycal.settings.*`).
+- Для каждой новой локализуемой строки добавляй ключи синхронно в `assets/i18n/active.en.json` и `assets/i18n/active.ru.json`.
+- `defaultOther` в коде держи на английском и совместимым с шаблонами (`{{.Var}}`), чтобы fallback через template expansion оставался рабочим.
+- Имена template-переменных (`DisplayName`, `Trigger`, `Count`, и т.п.) должны совпадать между кодом и переводами; не переименовывай их только в одной локали.
+- Для slash-команд и server-level описаний используй server-localizer (`locale.Server`), для персональных сообщений/DM/posting — user-localizer (`locale.User`).
+- При рефакторинге не ломай graceful fallback: при `nil` bundle или пустой локализации текст должен корректно формироваться из `defaultOther`.

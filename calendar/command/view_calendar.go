@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/views"
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
@@ -21,12 +22,27 @@ func (c *Command) viewCalendar(_ ...string) (string, bool, error) {
 		return c.T("ycal.viewcal.no_timezone", "Error: No timezone found", nil), false, err
 	}
 
-	startOfCurrentDay := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.Now().Location())
-	events, err := c.Engine.ViewCalendar(c.user(), startOfCurrentDay, time.Now().Add(14*24*time.Hour))
+	now := time.Now()
+	startOfCurrentDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	events, err := c.Engine.ViewCalendar(c.user(), startOfCurrentDay, now.Add(14*24*time.Hour))
 	if err != nil {
 		return "", false, err
 	}
+	events = filterOngoingAndUpcomingEvents(events, now)
 
-	out, err := views.RenderCalendarView(events, tz, c.I18n, c.Args.UserId)
+	out, err := views.RenderCalendarViewWithTimeFormat(events, tz, c.Engine.IsMilitaryTime(c.user()), c.I18n, c.Args.UserId)
 	return out, false, err
+}
+
+func filterOngoingAndUpcomingEvents(events []*remote.Event, now time.Time) []*remote.Event {
+	filtered := make([]*remote.Event, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		if !event.End.Time().Before(now) {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
 }

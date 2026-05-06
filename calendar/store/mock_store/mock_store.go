@@ -6,6 +6,7 @@ package mock_store
 
 import (
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 	store "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
@@ -636,6 +637,21 @@ func (m *MockStore) StoreUserEvent(arg0 string, arg1 *store.Event) error {
 func (mr *MockStoreMockRecorder) StoreUserEvent(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreUserEvent", reflect.TypeOf((*MockStore)(nil).StoreUserEvent), arg0, arg1)
+}
+
+// TryReserveNotification mocks base method.
+func (m *MockStore) TryReserveNotification(arg0 string, arg1 time.Duration) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryReserveNotification", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TryReserveNotification indicates an expected call of TryReserveNotification.
+func (mr *MockStoreMockRecorder) TryReserveNotification(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryReserveNotification", reflect.TypeOf((*MockStore)(nil).TryReserveNotification), arg0, arg1)
 }
 
 // StoreUserInIndex mocks base method.

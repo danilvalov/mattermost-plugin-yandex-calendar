@@ -325,6 +325,20 @@ func (mr *MockEngineMockRecorder) GetTimezone(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTimezone", reflect.TypeOf((*MockEngine)(nil).GetTimezone), arg0)
 }
 
+// IsMilitaryTime mocks base method.
+func (m *MockEngine) IsMilitaryTime(arg0 *engine.User) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMilitaryTime", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsMilitaryTime indicates an expected call of IsMilitaryTime.
+func (mr *MockEngineMockRecorder) IsMilitaryTime(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMilitaryTime", reflect.TypeOf((*MockEngine)(nil).IsMilitaryTime), arg0)
+}
+
 // GetUserSettings mocks base method.
 func (m *MockEngine) GetUserSettings(arg0 *engine.User) (*store.Settings, error) {
 	m.ctrl.T.Helper()

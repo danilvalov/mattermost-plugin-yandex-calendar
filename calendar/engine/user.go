@@ -18,6 +18,7 @@ import (
 type Users interface {
 	GetActingUser() *User
 	GetTimezone(user *User) (string, error)
+	IsMilitaryTime(user *User) bool
 	DisconnectUser(mattermostUserID string) error
 	GetRemoteUser(mattermostUserID string) (*remote.User, error)
 	IsAuthorizedAdmin(mattermostUserID string) (bool, error)
@@ -90,21 +91,69 @@ func (m *mscalendar) ExpandMattermostUser(user *User) error {
 func (m *mscalendar) GetTimezone(user *User) (string, error) {
 	err := m.Filter(
 		withClient,
-		withRemoteUser(user),
+		withUserExpanded(user),
 	)
 	if err != nil {
 		return "", err
+	}
+
+	if user.MattermostUser != nil && user.MattermostUser.Timezone != nil {
+		if user.MattermostUser.Timezone["useAutomaticTimezone"] == "true" {
+			if timezone := user.MattermostUser.Timezone["automaticTimezone"]; timezone != "" {
+				return timezone, nil
+			}
+		}
+		if timezone := user.MattermostUser.Timezone["manualTimezone"]; timezone != "" {
+			return timezone, nil
+		}
 	}
 
 	settings, err := m.client.GetMailboxSettings(user.Remote.ID)
 	if err != nil {
 		return "", err
 	}
-	return settings.TimeZone, nil
+	if settings.TimeZone != "" {
+		return settings.TimeZone, nil
+	}
+
+	return "UTC", nil
 }
 
 func (m *mscalendar) GetTimezoneByID(mattermostUserID string) (string, error) {
 	return m.GetTimezone(NewUser(mattermostUserID))
+}
+
+func (m *mscalendar) IsMilitaryTime(user *User) bool {
+	pref, err := m.PluginAPI.GetPreferenceForUser(user.MattermostUserID, preferenceCategoryDisplay, preferenceUseMilitaryTime)
+	if err != nil || pref == nil {
+		pref, err = m.PluginAPI.GetPreferenceForUser(user.MattermostUserID, preferenceCategoryDisplaySettings, preferenceUseMilitaryTime)
+	}
+	if err != nil || pref == nil {
+		return m.isMilitaryTimeFromAllPreferences(user.MattermostUserID)
+	}
+	return pref.Value == "true"
+}
+
+func (m *mscalendar) isMilitaryTimeFromAllPreferences(mattermostUserID string) bool {
+	prefs, err := m.PluginAPI.GetPreferencesForUser(mattermostUserID)
+	if err != nil {
+		return false
+	}
+
+	militaryNames := map[string]struct{}{
+		"use_military_time": {},
+		"useMilitaryTime":   {},
+		"military_time":     {},
+	}
+
+	for _, pref := range prefs {
+		if pref.Category == preferenceCategoryDisplay || pref.Category == preferenceCategoryDisplaySettings {
+			if _, ok := militaryNames[pref.Name]; ok {
+				return pref.Value == "true"
+			}
+		}
+	}
+	return false
 }
 
 func (user *User) String() string {

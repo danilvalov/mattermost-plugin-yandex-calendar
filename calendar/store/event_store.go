@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/pkg/errors"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
@@ -40,6 +41,7 @@ type EventStore interface {
 	LoadUserEvent(mattermostUserID, eventID string) (*Event, error)
 	StoreUserEvent(mattermostUserID string, event *Event) error
 	DeleteUserEvent(mattermostUserID, eventID string) error
+	TryReserveNotification(dedupeKey string, ttl time.Duration) (bool, error)
 }
 
 func eventKey(mattermostUserID, eventID string) string { return mattermostUserID + "_" + eventID }
@@ -145,4 +147,22 @@ func (s *pluginStore) DeleteUserEvent(mattermostUserID, eventID string) error {
 	}).Debugf("store: deleted event.")
 
 	return nil
+}
+
+func (s *pluginStore) TryReserveNotification(dedupeKey string, ttl time.Duration) (bool, error) {
+	if dedupeKey == "" {
+		return false, errors.New("empty dedupe key")
+	}
+
+	data := []byte("1")
+	ok, err := s.eventKV.StoreWithOptions("notif_"+dedupeKey, data, model.PluginKVSetOptions{
+		Atomic:          true,
+		OldValue:        nil,
+		ExpireInSeconds: int64(ttl.Seconds()),
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return ok, nil
 }

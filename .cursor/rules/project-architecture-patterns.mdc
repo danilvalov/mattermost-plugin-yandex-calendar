@@ -1,0 +1,17 @@
+---
+description: Архитектура, структура слоев и паттерны для плагина Yandex Calendar
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Архитектура проекта
+
+- Держи композицию зависимостей в `calendar/plugin`: инициализация `Env/Dependencies`, роутов, jobs и адаптеров должна оставаться в этом слое.
+- Следуй направлению слоев: `api`/`command`/`jobs` -> `engine` -> `remote`/`store`; не добавляй обратных зависимостей.
+- В `engine` работай через интерфейсы из `engine.Dependencies` (`Remote`, `Store`, `PluginAPI`, `Poster`, `Tracker`), а не через прямые реализации.
+- Для сценариев в `engine` используй текущий паттерн фильтров (`Filter`, `withClient`, `withUserExpanded`) перед вызовами `remote.Client`.
+- Новых провайдеров календаря реализуй отдельным пакетом по образцу `ycal`/`msgraph`: реализация `remote.Remote` + регистрация в `remote.Makers` в `init()`.
+- Конфигурируемые возможности провайдера (`PasswordAuth`, `EventNotifications`, `EnableEventPolling` и т.д.) задавай через `config.Provider.Features`, а поведение включай фиче-флагами, без форков логики по коду.
+- Для хранения данных используй `store.NewPluginStore` и `kvstore`-обертки (hashed/encrypted/ttl/cache); не записывай сырой чувствительный payload в KV мимо store-слоя.
+- Ошибки возвращай с контекстом (`errors.Wrap/WithMessage`) и логируй через `bot.Logger` с контекстом, чтобы не терять источник сбоя.
+- Любой новый пользовательский флоу должен иметь покрытие в `*_test.go` рядом с кодом и, при необходимости, моки в `mock_*` пакетах.

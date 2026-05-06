@@ -195,9 +195,24 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	loc, errLocation := time.LoadLocation(mailbox.TimeZone)
+	timezone := mailbox.TimeZone
+	if timezone == "" {
+		timezone = "UTC"
+	}
+	mattermostUser, errMMUser := api.PluginAPI.GetMattermostUser(mattermostUserID)
+	if errMMUser == nil && mattermostUser != nil && mattermostUser.Timezone != nil {
+		if mattermostUser.Timezone["useAutomaticTimezone"] == "true" {
+			if tz := mattermostUser.Timezone["automaticTimezone"]; tz != "" {
+				timezone = tz
+			}
+		} else if tz := mattermostUser.Timezone["manualTimezone"]; tz != "" {
+			timezone = tz
+		}
+	}
+
+	loc, errLocation := time.LoadLocation(timezone)
 	if errLocation != nil {
-		api.Logger.With(bot.LogContext{"err": errLocation.Error(), "timezone": mailbox.TimeZone}).Errorf("createEvent, error occurred while loading mailbox timezone location")
+		api.Logger.With(bot.LogContext{"err": errLocation.Error(), "timezone": timezone}).Errorf("createEvent, error occurred while loading mailbox timezone location")
 		httputils.WriteInternalServerError(w, errLocation)
 		return
 	}
@@ -244,7 +259,25 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attachment, err := views.RenderEventAsAttachment(event, mailbox.TimeZone, api.I18n, mattermostUserID, views.ShowTimezoneOption(mailbox.TimeZone))
+	isMilitary := false
+	pref, prefErr := api.PluginAPI.GetPreferenceForUser(mattermostUserID, "display", "use_military_time")
+	if prefErr != nil || pref == nil {
+		pref, prefErr = api.PluginAPI.GetPreferenceForUser(mattermostUserID, "display_settings", "use_military_time")
+	}
+	if prefErr != nil {
+		prefs, allErr := api.PluginAPI.GetPreferencesForUser(mattermostUserID)
+		if allErr == nil {
+			for _, p := range prefs {
+				if (p.Category == "display" || p.Category == "display_settings") && p.Name == "use_military_time" {
+					isMilitary = p.Value == "true"
+					break
+				}
+			}
+		}
+	} else if pref != nil {
+		isMilitary = pref.Value == "true"
+	}
+	attachment, err := views.RenderEventAsAttachmentWithTimeFormat(event, timezone, isMilitary, api.I18n, mattermostUserID, views.ShowTimezoneOptionWithTimeFormat(timezone, isMilitary))
 	if err != nil {
 		api.Logger.With(bot.LogContext{"err": err.Error()}).Errorf("createEvent, error rendering event as attachment")
 	}

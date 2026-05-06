@@ -29,6 +29,7 @@ func veventToRemoteEvent(parent *ical.Calendar, ve *ical.Component) (*remote.Eve
 	desc, _ := ve.Props.Text(ical.PropDescription)
 	location, _ := ve.Props.Text(ical.PropLocation)
 	status, _ := ve.Props.Text(ical.PropStatus)
+	url := propText(ve, ical.PropURL, "URL")
 
 	start, end, isAllDay, err := veventDateTimes(parent, ve)
 	if err != nil {
@@ -59,6 +60,7 @@ func veventToRemoteEvent(parent *ical.Calendar, ve *ical.Component) (*remote.Eve
 		BodyPreview:    clip(desc, 512),
 		IsAllDay:       isAllDay,
 		ShowAs:         showAs,
+		Weblink:        strings.TrimSpace(url),
 		Start:          start,
 		End:            end,
 		Location:       locationRemote(location),
@@ -70,6 +72,31 @@ func veventToRemoteEvent(parent *ical.Calendar, ve *ical.Component) (*remote.Eve
 	}
 
 	return ev, nil
+}
+
+func applyCurrentUserContext(ev *remote.Event, userEmail string) {
+	if ev == nil {
+		return
+	}
+
+	normUser := normalizeEmail(userEmail)
+	if normUser == "" {
+		return
+	}
+
+	if ev.Organizer != nil && ev.Organizer.EmailAddress != nil {
+		ev.IsOrganizer = normalizeEmail(ev.Organizer.EmailAddress.Address) == normUser
+	}
+
+	for _, a := range ev.Attendees {
+		if a == nil || a.EmailAddress == nil || a.Status == nil {
+			continue
+		}
+		if normalizeEmail(a.EmailAddress.Address) == normUser {
+			ev.ResponseStatus = &remote.EventResponseStatus{Response: a.Status.Response}
+			return
+		}
+	}
 }
 
 func clip(s string, n int) string {
@@ -95,6 +122,22 @@ func organizerMail(o *ical.Prop) string {
 		return v[7:]
 	}
 	return v
+}
+
+func normalizeEmail(v string) string {
+	return strings.TrimSpace(strings.ToLower(v))
+}
+
+func propText(ve *ical.Component, names ...string) string {
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		if p := ve.Props.Get(name); p != nil {
+			return strings.TrimSpace(p.Value)
+		}
+	}
+	return ""
 }
 
 func organizerCN(o *ical.Prop) string {
@@ -170,7 +213,7 @@ func veventDateTimes(cal *ical.Calendar, ve *ical.Component) (start *remote.Date
 		}
 	}
 
-	t0, dateOnly0, err := propDateOrDateTime(dtStart, loc)
+	t0, dateOnly0, utcStart, err := propDateOrDateTime(dtStart, loc)
 	if err != nil {
 		return nil, nil, false, err
 	}
@@ -184,7 +227,7 @@ func veventDateTimes(cal *ical.Calendar, ve *ical.Component) (start *remote.Date
 				l2 = l
 			}
 		}
-		t1, dateOnly1, err = propDateOrDateTime(dtEnd, l2)
+		t1, dateOnly1, _, err = propDateOrDateTime(dtEnd, l2)
 		if err != nil {
 			return nil, nil, false, err
 		}
@@ -202,16 +245,19 @@ func veventDateTimes(cal *ical.Calendar, ve *ical.Component) (start *remote.Date
 		return remote.NewDateTime(t0.UTC(), "UTC"), remote.NewDateTime(t1.UTC(), "UTC"), true, nil
 	}
 
+	if utcStart {
+		loc = time.UTC
+	}
 	tzName := loc.String()
 	if tzName == "Local" {
 		tzName = "UTC"
 	}
-	return remote.NewDateTime(t0.UTC(), tzName), remote.NewDateTime(t1.UTC(), tzName), false, nil
+	return remote.NewDateTime(t0, tzName), remote.NewDateTime(t1, tzName), false, nil
 }
 
-func propDateOrDateTime(p *ical.Prop, fallbackLoc *time.Location) (t time.Time, dateOnly bool, err error) {
+func propDateOrDateTime(p *ical.Prop, fallbackLoc *time.Location) (t time.Time, dateOnly bool, explicitUTC bool, err error) {
 	if p == nil {
-		return time.Time{}, false, fmt.Errorf("nil prop")
+		return time.Time{}, false, false, fmt.Errorf("nil prop")
 	}
 	if p.Params.Get(ical.ParamValue) == string(ical.ValueDate) || len(p.Value) == 8 {
 		layout := "20060102"
@@ -221,9 +267,9 @@ func propDateOrDateTime(p *ical.Prop, fallbackLoc *time.Location) (t time.Time, 
 		}
 		t, err = time.ParseInLocation(layout, v, fallbackLoc)
 		if err != nil {
-			return time.Time{}, false, err
+			return time.Time{}, false, false, err
 		}
-		return t, true, nil
+		return t, true, false, nil
 	}
 	v := strings.TrimSpace(p.Value)
 	if strings.HasSuffix(v, "Z") {
@@ -232,17 +278,21 @@ func propDateOrDateTime(p *ical.Prop, fallbackLoc *time.Location) (t time.Time, 
 		} else {
 			t, err = time.Parse(time.RFC3339, v)
 		}
-		return t.UTC(), false, err
+		return t.UTC(), false, true, err
 	}
 	if len(v) >= 15 && v[8] == 'T' {
 		t, err = time.ParseInLocation("20060102T150405", v[:15], fallbackLoc)
-		return t, false, err
+		return t, false, false, err
 	}
 	t, err = time.ParseInLocation("2006-01-02T15:04:05", v, fallbackLoc)
-	return t, false, err
+	return t, false, false, err
 }
 
 func lookupTZ(cal *ical.Calendar, tzid string) *time.Location {
+	if loc, err := time.LoadLocation(tzid); err == nil {
+		return loc
+	}
+
 	if cal == nil {
 		return nil
 	}
@@ -257,9 +307,6 @@ func lookupTZ(cal *ical.Calendar, tzid string) *time.Location {
 		if loc := timezoneFromComponent(ch); loc != nil {
 			return loc
 		}
-	}
-	if loc, err := time.LoadLocation(tzid); err == nil {
-		return loc
 	}
 	return nil
 }

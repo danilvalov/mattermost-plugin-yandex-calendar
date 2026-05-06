@@ -81,6 +81,12 @@ func NewSettingsPanel(bot bot.Bot, panelStore settingspanel.PanelStore, settingS
 	settings = append(settings, NewDailySummarySetting(
 		settingStore,
 		func(userID string) (string, error) { return getCal(userID).GetTimezone(NewUser(userID)) },
+		func(userID string) bool {
+			if cal, ok := getCal(userID).(*mscalendar); ok {
+				return cal.isMilitaryTimeByUserID(userID)
+			}
+			return false
+		},
 		tr,
 	))
 	return settingspanel.NewSettingsPanel(settings, bot, bot, panelStore, settingsHandler, pluginURL)

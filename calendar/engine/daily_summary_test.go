@@ -67,7 +67,8 @@ func TestGetDaySummaryForUser(t *testing.T) {
 			},
 		}, nil).Times(2)
 
-		mockPluginAPI.EXPECT().GetMattermostUser(user.MattermostUserID)
+		mockPluginAPI.EXPECT().GetMattermostUser(user.MattermostUserID).Times(2)
+		mockPluginAPI.EXPECT().GetPreferenceForUser(user.MattermostUserID, preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
 
 		mockRemote.EXPECT().MakeUserClient(context.Background(), nil, gomock.Any(), poster, gomock.Any()).Return(mockClient)
 
@@ -232,6 +233,9 @@ func TestProcessAllDailySummary(t *testing.T) {
 				mockRemote := deps.Remote.(*mock_remote.MockRemote)
 				mockRemote.EXPECT().MakeSuperuserClient(context.Background()).Return(mockClient, nil).Times(1)
 
+				papi := deps.PluginAPI.(*mock_plugin_api.MockPluginAPI)
+				papi.EXPECT().GetPreferenceForUser("user1_mm_id", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
+				papi.EXPECT().GetPreferenceForUser("user2_mm_id", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
 				mockPoster := deps.Poster.(*mock_bot.MockPoster)
 				gomock.InOrder(
 					mockPoster.EXPECT().DM("user1_mm_id", "You have no upcoming events.").Return("postID1", nil).Times(1),
@@ -318,8 +322,10 @@ Wednesday February 12, 2020
 					},
 				}, nil)
 
-				papi.EXPECT().GetMattermostUser("user1_mm_id").Times(2)
-				papi.EXPECT().GetMattermostUser("user2_mm_id").Times(2)
+				papi.EXPECT().GetMattermostUser("user1_mm_id").AnyTimes()
+				papi.EXPECT().GetMattermostUser("user2_mm_id").AnyTimes()
+				papi.EXPECT().GetPreferenceForUser("user1_mm_id", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
+				papi.EXPECT().GetPreferenceForUser("user2_mm_id", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
 
 				mockClient.EXPECT().GetMailboxSettings("user1_remote_id").Return(&remote.MailboxSettings{
 					TimeZone: "Eastern Standard Time",
@@ -449,6 +455,22 @@ func TestShouldPostDailySummary(t *testing.T) {
 			postTime:    "7:00AM",
 			timeZone:    "Mountain Standard Time",
 			shouldRun:   true,
+			shouldError: false,
+		},
+		{
+			name:        "24-hour format, right time",
+			enabled:     true,
+			postTime:    "09:00",
+			timeZone:    "Eastern Standard Time",
+			shouldRun:   true,
+			shouldError: false,
+		},
+		{
+			name:        "24-hour format, wrong time",
+			enabled:     true,
+			postTime:    "21:00",
+			timeZone:    "Eastern Standard Time",
+			shouldRun:   false,
 			shouldError: false,
 		},
 		{
@@ -608,6 +630,20 @@ func TestSetDailySummaryPostTime(t *testing.T) {
 			assertion: func(t *testing.T, settings *store.DailySummaryUserSettings, err error) {
 				require.NoError(t, err)
 				require.Equal(t, &store.DailySummaryUserSettings{PostTime: "9:00AM", Timezone: "UTC"}, settings)
+			},
+		},
+		{
+			name:       "successful setting of daily summary post time in 24-hour format",
+			timeString: "21:00",
+			user:       GetMockUserWithDefaultDailySummaryUserSettings(),
+			setupMock: func() {
+				mockPluginAPI.EXPECT().GetMattermostUser(MockMMUserID)
+				mockStore.EXPECT().StoreUser(gomock.Any()).Return(nil).Times(1)
+				mockClient.EXPECT().GetMailboxSettings(MockRemoteUserID).Return(&remote.MailboxSettings{TimeZone: "UTC"}, nil)
+			},
+			assertion: func(t *testing.T, settings *store.DailySummaryUserSettings, err error) {
+				require.NoError(t, err)
+				require.Equal(t, &store.DailySummaryUserSettings{PostTime: "21:00", Timezone: "UTC"}, settings)
 			},
 		},
 	}

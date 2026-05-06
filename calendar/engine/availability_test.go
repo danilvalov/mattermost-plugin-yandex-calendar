@@ -717,22 +717,22 @@ func TestReminders(t *testing.T) {
 		},
 		"One remote event, and is in the range for the reminder. Reminder should occur.": {
 			remoteEvents: []*remote.Event{
-				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(7*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
+				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(5*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
 			},
 			numReminders:   1,
 			shouldLogError: false,
 		},
 		"Two remote event, and are in the range for the reminder. Two reminders should occur.": {
 			remoteEvents: []*remote.Event{
-				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(7*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
-				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(7*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
+				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(5*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
+				{ICalUID: "event_id", Start: remote.NewDateTime(time.Now().Add(5*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
 			},
 			numReminders:   2,
 			shouldLogError: false,
 		},
 		"Remote event linked to channel in the range for the reminder. DM and channel reminders should occur.": {
 			remoteEvents: []*remote.Event{
-				{ID: "event_id_1", ICalUID: "event_id_1", Start: remote.NewDateTime(time.Now().Add(7*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
+				{ID: "event_id_1", ICalUID: "event_id_1", Start: remote.NewDateTime(time.Now().Add(5*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
 			},
 			eventMetadata: map[string]*store.EventMetadata{
 				"event_id_1": {
@@ -744,7 +744,7 @@ func TestReminders(t *testing.T) {
 		},
 		"Remote recurring event linked to channel in the range for the reminder. DM and channel reminders should occur.": {
 			remoteEvents: []*remote.Event{
-				{ID: "event_id_1_recurring", ICalUID: "event_id_1", Start: remote.NewDateTime(time.Now().Add(7*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
+				{ID: "event_id_1_recurring", ICalUID: "event_id_1", Start: remote.NewDateTime(time.Now().Add(5*time.Minute).UTC(), "UTC"), End: remote.NewDateTime(time.Now().Add(45*time.Minute).UTC(), "UTC")},
 			},
 			eventMetadata: map[string]*store.EventMetadata{
 				"event_id_1": {
@@ -769,6 +769,7 @@ func TestReminders(t *testing.T) {
 			deps := env.Dependencies
 
 			c, r, poster, s, logger := client.(*mock_remote.MockClient), env.Remote.(*mock_remote.MockRemote), deps.Poster.(*mock_bot.MockPoster), deps.Store.(*mock_store.MockStore), deps.Logger.(*mock_bot.MockLogger)
+			papi := deps.PluginAPI.(*mock_plugin_api.MockPluginAPI)
 			s.EXPECT().LoadUserIndex().Return(store.UserIndex{
 				&store.UserShort{
 					MattermostUserID: "user_mm_id",
@@ -791,9 +792,13 @@ func TestReminders(t *testing.T) {
 			}, nil)
 
 			if tc.numReminders > 0 {
+				papi.EXPECT().GetMattermostUser("user_mm_id").Return(&model.User{Timezone: map[string]string{
+					"useAutomaticTimezone": "false",
+					"manualTimezone":       "UTC",
+				}}, nil).Times(1)
+				papi.EXPECT().GetPreferenceForUser("user_mm_id", preferenceCategoryDisplay, preferenceUseMilitaryTime).Return(&model.Preference{Value: "false"}, nil).Times(1)
 				poster.EXPECT().DMWithAttachments("user_mm_id", gomock.Any()).Times(tc.numReminders)
 				loadUser.Times(2)
-				c.EXPECT().GetMailboxSettings("user_remote_id").Times(1).Return(&remote.MailboxSettings{TimeZone: "UTC"}, nil)
 
 				// Metadata (linked channels test)
 				for eventID, metadata := range tc.eventMetadata {
