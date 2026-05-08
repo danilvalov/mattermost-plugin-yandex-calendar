@@ -97,6 +97,7 @@ func TestGetDaySummaryForUser(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, result, `Times are shown in Pacific Standard Time
+
 Wednesday February 12, 2020
 
 | Time | Subject |
@@ -240,6 +241,7 @@ func TestProcessAllDailySummary(t *testing.T) {
 				gomock.InOrder(
 					mockPoster.EXPECT().DM("user1_mm_id", "You have no upcoming events.").Return("postID1", nil).Times(1),
 					mockPoster.EXPECT().DM("user2_mm_id", `Times are shown in Pacific Standard Time
+
 Wednesday February 12, 2020
 
 | Time | Subject |
@@ -349,6 +351,7 @@ Wednesday February 12, 2020
 				gomock.InOrder(
 					mockPoster.EXPECT().DM("user1_mm_id", "You have no upcoming events.").Return("postID1", nil).Times(1),
 					mockPoster.EXPECT().DM("user2_mm_id", `Times are shown in Pacific Standard Time
+
 Wednesday February 12, 2020
 
 | Time | Subject |
@@ -714,6 +717,42 @@ func TestSetDailySummaryEnabled(t *testing.T) {
 			tt.assertion(t, settings, err)
 		})
 	}
+}
+
+func TestFilterOngoingAndUpcomingEvents(t *testing.T) {
+	now := time.Date(2026, 5, 8, 10, 0, 0, 0, time.UTC)
+
+	past := &remote.Event{
+		Subject: "Past",
+		Start:   remote.NewDateTime(now.Add(-2*time.Hour), "UTC"),
+		End:     remote.NewDateTime(now.Add(-time.Hour), "UTC"),
+	}
+	ongoing := &remote.Event{
+		Subject: "Ongoing",
+		Start:   remote.NewDateTime(now.Add(-30*time.Minute), "UTC"),
+		End:     remote.NewDateTime(now.Add(30*time.Minute), "UTC"),
+	}
+	upcoming := &remote.Event{
+		Subject: "Upcoming",
+		Start:   remote.NewDateTime(now.Add(time.Hour), "UTC"),
+		End:     remote.NewDateTime(now.Add(2*time.Hour), "UTC"),
+	}
+
+	got := filterOngoingAndUpcomingEvents([]*remote.Event{past, ongoing, upcoming, nil}, now)
+	require.Equal(t, []*remote.Event{ongoing, upcoming}, got)
+}
+
+func TestIsSameCalendarDate(t *testing.T) {
+	tz := "Pacific Standard Time"
+	// 2026-05-08 01:30 UTC = 2026-05-07 18:30 PDT
+	a := time.Date(2026, 5, 8, 1, 30, 0, 0, time.UTC)
+	// Same local day in PDT
+	b := time.Date(2026, 5, 8, 6, 0, 0, 0, time.UTC)
+	// Next local day in PDT
+	c := time.Date(2026, 5, 8, 8, 0, 0, 0, time.UTC)
+
+	require.True(t, isSameCalendarDate(a, b, tz))
+	require.False(t, isSameCalendarDate(a, c, tz))
 }
 
 func makeTime(hour, minute int, loc *time.Location) time.Time {

@@ -206,7 +206,8 @@ func (m *mscalendar) ProcessAllDailySummary(now time.Time) error {
 			// Should never reach this point
 			continue
 		}
-		postStr, err := views.RenderCalendarViewWithTimeFormat(res.Events, dsum.Timezone, m.isMilitaryTimeByUserID(user.MattermostUserID), m.I18n, user.MattermostUserID)
+		events := filterOngoingAndUpcomingEvents(res.Events, now)
+		postStr, err := views.RenderCalendarViewWithTimeFormat(events, dsum.Timezone, m.isMilitaryTimeByUserID(user.MattermostUserID), m.I18n, user.MattermostUserID)
 		if err != nil {
 			m.Logger.Warnf("Error rendering user %s calendar. err=%v", user.MattermostUserID, err)
 		}
@@ -237,6 +238,9 @@ func (m *mscalendar) GetDaySummaryForUser(day time.Time, user *User) (string, er
 	}
 
 	events := m.excludeDeclinedEvents(calendarData)
+	if isSameCalendarDate(day, time.Now(), timezone) {
+		events = filterOngoingAndUpcomingEvents(events, time.Now())
+	}
 
 	messageString, err := views.RenderCalendarViewWithTimeFormat(events, timezone, m.isMilitaryTimeByUserID(user.MattermostUserID), m.I18n, user.MattermostUserID)
 	if err != nil {
@@ -294,6 +298,25 @@ func getTodayHoursForTimezone(now time.Time, timezone string) (start, end time.T
 	start = time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 	end = start.Add(24 * time.Hour)
 	return start, end
+}
+
+func filterOngoingAndUpcomingEvents(events []*remote.Event, now time.Time) []*remote.Event {
+	filtered := make([]*remote.Event, 0, len(events))
+	for _, event := range events {
+		if event == nil {
+			continue
+		}
+		if !event.End.Time().Before(now) {
+			filtered = append(filtered, event)
+		}
+	}
+	return filtered
+}
+
+func isSameCalendarDate(a, b time.Time, timezone string) bool {
+	inA := remote.NewDateTime(a.UTC(), "UTC").In(timezone).Time()
+	inB := remote.NewDateTime(b.UTC(), "UTC").In(timezone).Time()
+	return inA.Year() == inB.Year() && inA.YearDay() == inB.YearDay()
 }
 
 /*
