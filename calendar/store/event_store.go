@@ -5,6 +5,7 @@ package store
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/mattermost/mattermost/server/public/model"
@@ -46,6 +47,34 @@ type EventStore interface {
 
 func eventKey(mattermostUserID, eventID string) string { return mattermostUserID + "_" + eventID }
 func eventMetaKey(eventID string) string               { return "metadata_" + eventID }
+
+// UserEventSnapshotKey is the logical id for LoadUserEvent / StoreUserEvent / DeleteUserEvent.
+// Recurring series share ICalUID across expanded instances; stable occurrence start disambiguates them.
+// When Start is missing or unparsable, falls back to ICalUID-only (legacy single-instance behavior).
+func UserEventSnapshotKey(ev *remote.Event) string {
+	if ev == nil {
+		return ""
+	}
+	uid := ev.ICalUID
+	if uid == "" {
+		uid = ev.ID
+	}
+	if ev.Start != nil {
+		if t := ev.Start.Time(); !t.IsZero() {
+			return uid + "|" + t.UTC().Format(time.RFC3339Nano)
+		}
+	}
+	return uid
+}
+
+func kvIsDuplicateInsert(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "duplicate key") ||
+		strings.Contains(msg, "unique constraint")
+}
 
 func (s *pluginStore) LoadUserEvent(mattermostUserID, eventID string) (*Event, error) {
 	event := Event{}
@@ -121,7 +150,8 @@ func (s *pluginStore) StoreUserEvent(mattermostUserID string, event *Event) erro
 	if err != nil {
 		return err
 	}
-	err = s.eventKV.StoreTTL(eventKey(mattermostUserID, event.Remote.ICalUID), data, ttl)
+	snapKey := UserEventSnapshotKey(event.Remote)
+	err = s.eventKV.StoreTTL(eventKey(mattermostUserID, snapKey), data, ttl)
 	if err != nil {
 		return err
 	}
@@ -161,6 +191,10 @@ func (s *pluginStore) TryReserveNotification(dedupeKey string, ttl time.Duration
 		ExpireInSeconds: int64(ttl.Seconds()),
 	})
 	if err != nil {
+		// Concurrent duplicate reservation: same semantics as !ok without surfacing DB constraint noise.
+		if kvIsDuplicateInsert(err) {
+			return false, nil
+		}
 		return false, err
 	}
 

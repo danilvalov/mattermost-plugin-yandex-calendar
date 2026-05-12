@@ -181,22 +181,17 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 	}
 
 	dedupeKey := notificationDedupeKey(creator.MattermostUserID, n)
+
 	reserved, err := processor.Store.TryReserveNotification(dedupeKey, notificationDedupeTTL)
 	if err != nil {
 		return err
 	}
 	if !reserved {
-		processor.Logger.With(bot.LogContext{
-			"MattermostUserID": creator.MattermostUserID,
-			"SubscriptionID":   n.SubscriptionID,
-			"EventID":          n.Event.ID,
-			"EventICalUID":     n.Event.ICalUID,
-		}).Debugf("webhook notification: duplicate suppressed.")
 		return nil
 	}
 
 	var sa *model.SlackAttachment
-	prior, err := processor.Store.LoadUserEvent(creator.MattermostUserID, n.Event.ICalUID)
+	prior, err := processor.Store.LoadUserEvent(creator.MattermostUserID, store.UserEventSnapshotKey(n.Event))
 	if err != nil && err != store.ErrNotFound {
 		return err
 	}
@@ -207,13 +202,6 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 		var changed bool
 		changed, sa = processor.updatedEventSlackAttachment(creator.MattermostUserID, n, prior.Remote, timezone, isMilitary)
 		if !changed {
-			processor.Logger.With(bot.LogContext{
-				"MattermostUserID": creator.MattermostUserID,
-				"SubscriptionID":   n.SubscriptionID,
-				"ChangeType":       n.ChangeType,
-				"EventID":          n.Event.ID,
-				"EventICalUID":     n.Event.ICalUID,
-			}).Debugf("webhook notification: no changes detected in event.")
 			return nil
 		}
 	} else {
@@ -232,38 +220,41 @@ func (processor *notificationProcessor) processNotification(n *remote.Notificati
 		return err
 	}
 
-	processor.Logger.With(bot.LogContext{
-		"MattermostUserID": creator.MattermostUserID,
-		"SubscriptionID":   n.SubscriptionID,
-	}).Debugf("Notified: %s.", sa.Title)
-
 	return nil
 }
 
-func notificationDedupeKey(mattermostUserID string, n *remote.Notification) string {
+func notificationDedupeSignature(n *remote.Notification) string {
+	if n == nil || n.Event == nil {
+		return ""
+	}
+	ev := n.Event
 	start := ""
-	if n.Event.Start != nil {
-		start = n.Event.Start.String()
+	if ev.Start != nil {
+		start = ev.Start.String()
 	}
 	end := ""
-	if n.Event.End != nil {
-		end = n.Event.End.String()
+	if ev.End != nil {
+		end = ev.End.String()
 	}
 	location := ""
-	if n.Event.Location != nil {
-		location = n.Event.Location.DisplayName
+	if ev.Location != nil {
+		location = ev.Location.DisplayName
 	}
 
-	signature := fmt.Sprintf("%s|%s|%s|%s|%s|%t|%s",
+	return fmt.Sprintf("%s|%s|%s|%s|%s|%t|%s",
 		n.ChangeType,
-		n.Event.ICalUID,
-		n.Event.Subject,
+		ev.ICalUID,
+		ev.Subject,
 		start,
 		end,
-		n.Event.IsCancelled,
+		ev.IsCancelled,
 		location,
 	)
-	sum := sha256.Sum256([]byte(signature))
+}
+
+func notificationDedupeKey(mattermostUserID string, n *remote.Notification) string {
+	sig := notificationDedupeSignature(n)
+	sum := sha256.Sum256([]byte(sig))
 	return mattermostUserID + "_" + hex.EncodeToString(sum[:])
 }
 

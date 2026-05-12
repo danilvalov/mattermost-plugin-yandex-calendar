@@ -41,6 +41,7 @@ func RunPollNotificationsJob(env Env) {
 			env.Logger.Errorf("PollNotifications for %s: %v", us.MattermostUserID, err)
 			continue
 		}
+
 		for _, n := range notifs {
 			if n == nil {
 				continue
