@@ -1,43 +1,339 @@
 [
     {
-        "id": "ycal.ui.calendar.title",
-        "translation": "Calendar"
+        "id": "ycal.caldav.err.unauthorized_get",
+        "translation": "Not authorized — open this URL while logged into Mattermost in your browser."
     },
     {
-        "id": "ycal.ui.calendar.loading",
-        "translation": "Loading calendar..."
+        "id": "ycal.caldav.err.session_start",
+        "translation": "could not start connect session — try again"
     },
     {
-        "id": "ycal.ui.calendar.load_error",
-        "translation": "Failed to load calendar data."
+        "id": "ycal.caldav.err.invalid_form",
+        "translation": "invalid form"
     },
     {
-        "id": "ycal.ui.calendar.connect_required",
-        "translation": "Connect your calendar account first using /ycal connect."
+        "id": "ycal.caldav.err.unauthorized_post",
+        "translation": "Not authorized — open the connect page again from Mattermost (session was not sent with this submit)."
     },
     {
-        "id": "ycal.ui.calendar.open_button",
-        "translation": "Calendar"
+        "id": "ycal.caldav.err.missing_credentials",
+        "translation": "email and app_password are required"
     },
     {
-        "id": "ycal.ui.calendar.create_prompt",
-        "translation": "New event title"
+        "id": "ycal.caldav.page_title",
+        "translation": "Connect {{.DisplayName}}"
     },
     {
-        "id": "ycal.ui.calendar.delete_confirm",
-        "translation": "Delete this event?"
+        "id": "ycal.caldav.intro_html",
+        "translation": "Use an <strong>app password</strong> from your <a href=\"https://id.yandex.ru/security/app-passwords\" target=\"_blank\">account security settings</a> (not your regular login password)."
     },
     {
-        "id": "ycal.ui.calendar.create_failed",
-        "translation": "Could not create event."
+        "id": "ycal.caldav.label_email",
+        "translation": "Email"
     },
     {
-        "id": "ycal.ui.calendar.update_failed",
-        "translation": "Could not update event."
+        "id": "ycal.caldav.label_app_password",
+        "translation": "App password"
     },
     {
-        "id": "ycal.ui.calendar.delete_failed",
-        "translation": "Could not delete event."
+        "id": "ycal.caldav.button_submit",
+        "translation": "Connect"
+    },
+    {
+        "id": "ycal.caldav.success_title",
+        "translation": "Connected"
+    },
+    {
+        "id": "ycal.caldav.success_body",
+        "translation": "Connected to {{.DisplayName}}. You can close this window and return to Mattermost."
+    },
+    {
+        "id": "ycal.cmd.not_connected",
+        "translation": "It looks like your Mattermost account is not connected to a {{.DisplayName}} account. [Click here to connect your account]({{.ConnectURL}}) or use `/{{.Trigger}} connect`."
+    },
+    {
+        "id": "ycal.cmd.not_authorized",
+        "translation": "Not authorized"
+    },
+    {
+        "id": "ycal.connect.already_connected",
+        "translation": "Your Mattermost account is already connected to {{.DisplayName}} account `{{.Mail}}`. To connect to a different account, first run `/{{.Trigger}} disconnect`."
+    },
+    {
+        "id": "ycal.connect.error",
+        "translation": "There has been a problem while trying to connect: {{.Err}}"
+    },
+    {
+        "id": "ycal.disconnect.success",
+        "translation": "Successfully disconnected your account"
+    },
+    {
+        "id": "ycal.subscribe.already",
+        "translation": "You are already subscribed to events."
+    },
+    {
+        "id": "ycal.subscribe.success",
+        "translation": "You are now subscribed to events."
+    },
+    {
+        "id": "ycal.subscribe.list_prefix",
+        "translation": "Subscriptions:"
+    },
+    {
+        "id": "ycal.unsubscribe.not_subscribed",
+        "translation": "You are not subscribed to events."
+    },
+    {
+        "id": "ycal.unsubscribe.success",
+        "translation": "You have unsubscribed from events."
+    },
+    {
+        "id": "ycal.availability.bad_syntax",
+        "translation": "bad syntax"
+    },
+    {
+        "id": "ycal.event.desktop_only",
+        "translation": "Creating events is only supported on desktop."
+    },
+    {
+        "id": "ycal.viewcal.no_timezone",
+        "translation": "Error: No timezone found"
+    },
+    {
+        "id": "ycal.err.user_inactive",
+        "translation": "You have been marked inactive because your refresh token is expired. Please disconnect and reconnect your account again."
+    },
+    {
+        "id": "ycal.daily.help",
+        "translation": "### Daily summary commands:\n`/{{.Trigger}} summary view` - View your daily summary\n`/{{.Trigger}} summary settings` - View your settings for the daily summary\n`/{{.Trigger}} summary time 8:00AM` - Set the time you would like to receive your daily summary\n`/{{.Trigger}} summary enable` - Enable your daily summary\n`/{{.Trigger}} summary disable` - Disable your daily summary"
+    },
+    {
+        "id": "ycal.daily.set_time_hint",
+        "translation": "Please enter a time, for example:\n`/{{.Trigger}} summary time 8:00AM`"
+    },
+    {
+        "id": "ycal.daily.invalid",
+        "translation": "Invalid command. Please try again\n\n{{.Help}}"
+    },
+    {
+        "id": "ycal.daily.configure_suffix",
+        "translation": "You may need to configure your daily summary using the commands below.\n{{.Help}}"
+    },
+    {
+        "id": "ycal.daily.need_time",
+        "translation": "Your daily summary time is not yet configured.\n{{.Hint}}"
+    },
+    {
+        "id": "ycal.daily.disabled_suffix",
+        "translation": ", but is disabled. Enable it with `/{{.Trigger}} summary enable`"
+    },
+    {
+        "id": "ycal.daily.state",
+        "translation": "Your daily summary is configured to show at {{.PostTime}} {{.Timezone}}{{.DisableHint}}."
+    },
+    {
+        "id": "ycal.info.version",
+        "translation": "Mattermost {{.DisplayName}} plugin version: {{.Version}}, [{{.HashShort}}](https://github.com/mattermost/{{.Repo}}/commit/{{.Hash}}), built {{.Date}}\n"
+    },
+    {
+        "id": "ycal.view.no_upcoming",
+        "translation": "You have no upcoming events."
+    },
+    {
+        "id": "ycal.view.times_in_tz",
+        "translation": "Times are shown in {{.TimeZone}}"
+    },
+    {
+        "id": "ycal.view.table_header",
+        "translation": "| Time | Subject |\n| :-- | :-- |"
+    },
+    {
+        "id": "ycal.view.no_subject",
+        "translation": "(No subject)"
+    },
+    {
+        "id": "ycal.view.all_day_label",
+        "translation": "All day event"
+    },
+    {
+        "id": "ycal.view.no_events_day",
+        "translation": "You have no events for that day"
+    },
+    {
+        "id": "ycal.view.agenda_header",
+        "translation": "Agenda for {{.Day}}.\nTimes are shown in {{.TimeZone}}"
+    },
+    {
+        "id": "ycal.view.field.location",
+        "translation": "Location"
+    },
+    {
+        "id": "ycal.view.field.meeting_url",
+        "translation": "Meeting URL"
+    },
+    {
+        "id": "ycal.view.upcoming_event_prefix",
+        "translation": "You have an upcoming event:\n"
+    },
+    {
+        "id": "ycal.view.upcoming_event_short",
+        "translation": "Upcoming event:\n"
+    },
+    {
+        "id": "ycal.view.upcoming_channel_stub",
+        "translation": "Upcoming event"
+    },
+    {
+        "id": "ycal.daily.fetch_events_failed",
+        "translation": "Failed to get calendar events"
+    },
+    {
+        "id": "ycal.status.online",
+        "translation": "Online"
+    },
+    {
+        "id": "ycal.status.away",
+        "translation": "Away"
+    },
+    {
+        "id": "ycal.status.dnd",
+        "translation": "Do Not Disturb"
+    },
+    {
+        "id": "ycal.status.offline",
+        "translation": "Offline"
+    },
+    {
+        "id": "ycal.status.event_will_start",
+        "translation": "Your event [{{.Subject}}]({{.Link}}) will start soon."
+    },
+    {
+        "id": "ycal.status.event_will_start_no_subject",
+        "translation": "[An event with no subject]({{.Link}}) will start soon."
+    },
+    {
+        "id": "ycal.status.event_ongoing",
+        "translation": "Your event [{{.Subject}}]({{.Link}}) is ongoing."
+    },
+    {
+        "id": "ycal.status.event_ongoing_no_subject",
+        "translation": "[An event with no subject]({{.Link}}) is ongoing."
+    },
+    {
+        "id": "ycal.status.no_upcoming_change_back",
+        "translation": "You have no upcoming events.\n Shall I change your status back to {{.Status}}?"
+    },
+    {
+        "id": "ycal.status.change_status_prompt",
+        "translation": "Shall I change your status to {{.Status}}?"
+    },
+    {
+        "id": "ycal.status.change_title",
+        "translation": "Status change"
+    },
+    {
+        "id": "ycal.common.yes",
+        "translation": "Yes"
+    },
+    {
+        "id": "ycal.common.no",
+        "translation": "No"
+    },
+    {
+        "id": "ycal.notify.field.subject",
+        "translation": "Subject"
+    },
+    {
+        "id": "ycal.notify.field.body_preview",
+        "translation": "Description"
+    },
+    {
+        "id": "ycal.notify.field.importance",
+        "translation": "Importance"
+    },
+    {
+        "id": "ycal.notify.field.duration",
+        "translation": "Duration"
+    },
+    {
+        "id": "ycal.notify.field.when",
+        "translation": "When"
+    },
+    {
+        "id": "ycal.notify.field.location",
+        "translation": "Location"
+    },
+    {
+        "id": "ycal.notify.field.attendees",
+        "translation": "Attendees"
+    },
+    {
+        "id": "ycal.notify.field.organizer",
+        "translation": "Organizer"
+    },
+    {
+        "id": "ycal.notify.field.response_status",
+        "translation": "ResponseStatus"
+    },
+    {
+        "id": "ycal.notify.title_new",
+        "translation": "(new) {{.Title}}"
+    },
+    {
+        "id": "ycal.notify.title_updated",
+        "translation": "(updated) {{.Title}}"
+    },
+    {
+        "id": "ycal.notify.response_control",
+        "translation": "Response"
+    },
+    {
+        "id": "ycal.notify.option.not_responded",
+        "translation": "Not responded"
+    },
+    {
+        "id": "ycal.notify.option.yes",
+        "translation": "Yes"
+    },
+    {
+        "id": "ycal.notify.option.no",
+        "translation": "No"
+    },
+    {
+        "id": "ycal.notify.option.maybe",
+        "translation": "Maybe"
+    },
+    {
+        "id": "ycal.notify.not_defined",
+        "translation": "Not defined"
+    },
+    {
+        "id": "ycal.notify.none",
+        "translation": "None"
+    },
+    {
+        "id": "ycal.notify.na",
+        "translation": "n/a"
+    },
+    {
+        "id": "ycal.notify.duration_days",
+        "translation": "{{.Count}} days"
+    },
+    {
+        "id": "ycal.notify.duration_allday",
+        "translation": "all-day"
+    },
+    {
+        "id": "ycal.notify.duration_one_hour",
+        "translation": "one hour"
+    },
+    {
+        "id": "ycal.notify.duration_hours",
+        "translation": "{{.Count}} hours"
+    },
+    {
+        "id": "ycal.notify.duration_minutes",
+        "translation": "{{.Count}} minutes"
     },
     {
         "id": "ycal.notify.date.weekday.monday",
@@ -124,7 +420,247 @@
         "translation": "{{.Weekday}} {{.Month}} {{.Day}}, {{.Year}}"
     },
     {
-        "id": "ycal.notify.field.body_preview",
-        "translation": "Description"
+        "id": "ycal.calendar.invite_unlinked",
+        "translation": "You have been invited to a {{.DisplayName}} event but have not linked your account. Feel free to join us by connecting your {{.DisplayName}} account using `/{{.Trigger}} connect`"
+    },
+    {
+        "id": "ycal.oauth.remote_already_connected",
+        "translation": "{{.DisplayName}} account `{{.Mail}}` is already mapped to Mattermost account `{{.Username}}`. Please run `/{{.Trigger}} disconnect`, while logged in as the Mattermost account"
+    },
+    {
+        "id": "ycal.oauth.remote_already_disabled",
+        "translation": "{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the account is deactivated. Please enable it and run `/{{.Trigger}} disconnect`,  while logged in as the other Mattermost account, and try again"
+    },
+    {
+        "id": "ycal.oauth.remote_already_not_found",
+        "translation": "{{.DisplayName}} account `{{.Mail}}` is already mapped to a Mattermost account, but the Mattermost user could not be found"
+    },
+    {
+        "id": "ycal.welcome.connect_title",
+        "translation": "Connect"
+    },
+    {
+        "id": "ycal.welcome.password_auth",
+        "translation": "Welcome to the {{.DisplayName}} plugin. [Open the connect page]({{.URL}}/caldav/connect) to enter your account email and app password."
+    },
+    {
+        "id": "ycal.welcome.oauth",
+        "translation": "Welcome to the {{.DisplayName}} plugin. [Click here to link your account.]({{.URL}}/oauth2/connect)"
+    },
+    {
+        "id": "ycal.welcome.connected",
+        "translation": ":tada: Congratulations! Your {{.DisplayName}} account (*{{.Login}}*) has been connected to Mattermost."
+    },
+    {
+        "id": "ycal.welcome.settings_hint",
+        "translation": "Feel free to change these settings anytime by typing `/{{.Trigger}} settings`"
+    },
+    {
+        "id": "ycal.api.event_link_failed",
+        "translation": "Your event **{{.Subject}}** could not be linked to a channel. Please contact an administrator for more details."
+    },
+    {
+        "id": "ycal.api.event_linked_channel",
+        "translation": "The event **{{.Subject}}** was linked to this channel by @{{.User}}"
+    },
+    {
+        "id": "ycal.api.event_created_with_subject",
+        "translation": "Your event: **{{.Subject}}** was created successfully."
+    },
+    {
+        "id": "ycal.api.event_created",
+        "translation": "Your event was created successfully."
+    },
+    {
+        "id": "ycal.status.custom_in_meeting",
+        "translation": "In a meeting"
+    },
+    {
+        "id": "ycal.cmd.register.slash_help",
+        "translation": "Interact with your {{.DisplayName}} calendar."
+    },
+    {
+        "id": "ycal.cmd.ac.connect",
+        "translation": "Connect to your {{.DisplayName}} account"
+    },
+    {
+        "id": "ycal.cmd.ac.disconnect",
+        "translation": "Disconnect from your {{.DisplayName}} account"
+    },
+    {
+        "id": "ycal.cmd.ac.summary",
+        "translation": "View your events for today, or edit the settings for your daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_view",
+        "translation": "View your daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_today",
+        "translation": "Display today's events."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_tomorrow",
+        "translation": "Display tomorrow's events."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_settings",
+        "translation": "View your settings for the daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_time",
+        "translation": "Set the time you would like to receive your daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_enable",
+        "translation": "Enable your daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.summary_disable",
+        "translation": "Disable your daily summary."
+    },
+    {
+        "id": "ycal.cmd.ac.viewcal",
+        "translation": "View your events for the upcoming 14 days, including today."
+    },
+    {
+        "id": "ycal.cmd.ac.event",
+        "translation": "Manage events."
+    },
+    {
+        "id": "ycal.cmd.ac.event_create",
+        "translation": "Creates a new event."
+    },
+    {
+        "id": "ycal.cmd.ac.today",
+        "translation": "Display today's events."
+    },
+    {
+        "id": "ycal.cmd.ac.tomorrow",
+        "translation": "Display tomorrow's events."
+    },
+    {
+        "id": "ycal.cmd.ac.settings",
+        "translation": "Edit your user personal settings."
+    },
+    {
+        "id": "ycal.cmd.ac.info",
+        "translation": "Read information about this version of the plugin."
+    },
+    {
+        "id": "ycal.cmd.ac.help",
+        "translation": "Read help text for the commands"
+    },
+    {
+        "id": "ycal.settings.ui.attachment_title",
+        "translation": "Setting: {{.Name}}"
+    },
+    {
+        "id": "ycal.settings.ui.disabled",
+        "translation": "Disabled"
+    },
+    {
+        "id": "ycal.settings.ui.current_value",
+        "translation": "**Current value:** {{.Value}}"
+    },
+    {
+        "id": "ycal.settings.ui.select_option",
+        "translation": "Select an option:"
+    },
+    {
+        "id": "ycal.settings.ui.yes",
+        "translation": "Yes"
+    },
+    {
+        "id": "ycal.settings.ui.no",
+        "translation": "No"
+    },
+    {
+        "id": "ycal.settings.status.opt.away",
+        "translation": "Away"
+    },
+    {
+        "id": "ycal.settings.status.opt.dnd",
+        "translation": "Do Not Disturb"
+    },
+    {
+        "id": "ycal.settings.status.opt.notset",
+        "translation": "Don't set status for me"
+    },
+    {
+        "id": "ycal.settings.update_status_from_options.title",
+        "translation": "Update Status"
+    },
+    {
+        "id": "ycal.settings.update_status_from_options.desc",
+        "translation": "Do you want to update your status on Mattermost when you are in a meeting?"
+    },
+    {
+        "id": "ycal.settings.get_confirmation.title",
+        "translation": "Get Confirmation"
+    },
+    {
+        "id": "ycal.settings.get_confirmation.desc",
+        "translation": "Do you want to get a confirmation before automatically updating your status?"
+    },
+    {
+        "id": "ycal.settings.set_custom_status.title",
+        "translation": "Set Custom Status"
+    },
+    {
+        "id": "ycal.settings.set_custom_status.desc",
+        "translation": "Do you want to set custom status automatically on Mattermost when you are in a meeting?"
+    },
+    {
+        "id": "ycal.settings.get_reminders.title",
+        "translation": "Receive Reminders"
+    },
+    {
+        "id": "ycal.settings.get_reminders.desc",
+        "translation": "Do you want to receive reminders for upcoming events?"
+    },
+    {
+        "id": "ycal.settings.new_or_updated_event_setting.title",
+        "translation": "Receive notifications of new events"
+    },
+    {
+        "id": "ycal.settings.new_or_updated_event_setting.desc",
+        "translation": "Do you want to subscribe to new events and receive a message when they are created?"
+    },
+    {
+        "id": "ycal.settings.summary_setting.title",
+        "translation": "Daily Summary"
+    },
+    {
+        "id": "ycal.settings.summary_setting.desc",
+        "translation": "When do you want to receive the daily summary?\n If you update this setting, it will automatically update to your the timezone currently set on your calendar."
+    },
+    {
+        "id": "ycal.settings.daily.label_hour",
+        "translation": "H:"
+    },
+    {
+        "id": "ycal.settings.daily.label_minute",
+        "translation": "M:"
+    },
+    {
+        "id": "ycal.settings.daily.label_ampm",
+        "translation": "AM/PM:"
+    },
+    {
+        "id": "ycal.settings.daily.enable",
+        "translation": "Enable"
+    },
+    {
+        "id": "ycal.settings.daily.disable",
+        "translation": "Disable"
+    },
+    {
+        "id": "ycal.settings.daily.am",
+        "translation": "AM"
+    },
+    {
+        "id": "ycal.settings.daily.pm",
+        "translation": "PM"
     }
 ]
