@@ -80,7 +80,7 @@ func (o *handler) connectGET(w http.ResponseWriter, r *http.Request) {
 	data := map[string]any{"DisplayName": dn}
 	title := locale.User(o.i18n, mattermostUserID, "ycal.caldav.page_title", "Connect {{.DisplayName}}", data)
 	intro := locale.User(o.i18n, mattermostUserID, "ycal.caldav.intro_html",
-		`Use an <strong>app password</strong> from your <a href="https://yandex.ru/security/app-passwords" target="_blank">account security settings</a> (not your regular login password).`, nil)
+		`Use an <strong>app password</strong> from your <a href="https://id.yandex.ru/security/app-passwords" target="_blank">account security settings</a> (not your regular login password).`, nil)
 	labelEmail := locale.User(o.i18n, mattermostUserID, "ycal.caldav.label_email", "Email", nil)
 	labelPassword := locale.User(o.i18n, mattermostUserID, "ycal.caldav.label_app_password", "App password", nil)
 	btn := locale.User(o.i18n, mattermostUserID, "ycal.caldav.button_submit", "Connect", nil)

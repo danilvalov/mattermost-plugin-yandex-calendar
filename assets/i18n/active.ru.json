@@ -25,7 +25,7 @@
     },
     {
         "id": "ycal.caldav.intro_html",
-        "translation": "Используйте <strong>пароль приложения</strong> из <a href=\"https://yandex.ru/security/app-passwords\" target=\"_blank\">настроек безопасности аккаунта</a> (не обычный пароль для входа)."
+        "translation": "Используйте <strong>пароль приложения</strong> из <a href=\"https://id.yandex.ru/security/app-passwords\" target=\"_blank\">настроек безопасности аккаунта</a> (не обычный пароль для входа)."
     },
     {
         "id": "ycal.caldav.label_email",
