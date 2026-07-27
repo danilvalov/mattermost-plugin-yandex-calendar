@@ -293,15 +293,31 @@
     },
     {
         "id": "ycal.notify.option.yes",
-        "translation": "Да"
+        "translation": "Пойду"
     },
     {
         "id": "ycal.notify.option.no",
-        "translation": "Нет"
+        "translation": "Не пойду"
     },
     {
         "id": "ycal.notify.option.maybe",
-        "translation": "Возможно"
+        "translation": "Возможно, пойду"
+    },
+    {
+        "id": "ycal.notify.response_saved",
+        "translation": "Ответ сохранён: {{.Option}}"
+    },
+    {
+        "id": "ycal.notify.response_declined_locked",
+        "translation": "«Пойду» / «Возможно» здесь заблокированы: Яндекс убирает отклонённые события из CalDAV. Чтобы сменить ответ, верните событие в Яндекс.Календаре."
+    },
+    {
+        "id": "ycal.notify.response_event_changed",
+        "translation": "Событие изменилось с момента этого сообщения. Измените статус прямо в календаре."
+    },
+    {
+        "id": "ycal.notify.response_event_gone",
+        "translation": "Событие больше недоступно по CalDAV (Яндекс скрывает его после «Не пойду»). Сначала верните его в Яндекс.Календаре."
     },
     {
         "id": "ycal.notify.not_defined",

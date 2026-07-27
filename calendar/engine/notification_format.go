@@ -5,6 +5,7 @@ package engine
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -44,7 +45,7 @@ func (processor *notificationProcessor) notifyFieldTitle(mattermostUserID, field
 
 func (processor *notificationProcessor) newSlackAttachment(mattermostUserID string, n *remote.Notification) *model.SlackAttachment {
 	title := views.EnsureSubject(processor.I18n, mattermostUserID, n.Event.Subject)
-	titleLink := n.Event.Weblink
+	titleLink := safeHTTPURL(n.Event.Weblink)
 	text := n.Event.BodyPreview
 	if strings.TrimSpace(text) == "" && n.Event.Body != nil {
 		text = n.Event.Body.Content
@@ -55,13 +56,21 @@ func (processor *notificationProcessor) newSlackAttachment(mattermostUserID stri
 		organizerName = n.Event.Organizer.EmailAddress.Name
 		organizerAddress = n.Event.Organizer.EmailAddress.Address
 	}
+	authorLink := ""
+	if strings.TrimSpace(organizerAddress) != "" {
+		authorLink = "mailto:" + organizerAddress
+	}
+	fallbackLink := titleLink
+	if fallbackLink == "" {
+		fallbackLink = "#"
+	}
 	return &model.SlackAttachment{
 		AuthorName: organizerName,
-		AuthorLink: "mailto:" + organizerAddress,
+		AuthorLink: authorLink,
 		TitleLink:  titleLink,
 		Title:      title,
 		Text:       views.LinkifyAndEscapeText(text),
-		Fallback:   fmt.Sprintf("[%s](%s): %s", title, titleLink, views.LinkifyAndEscapeText(text)),
+		Fallback:   fmt.Sprintf("[%s](%s): %s", title, fallbackLink, views.LinkifyAndEscapeText(text)),
 	}
 }
 
@@ -82,7 +91,11 @@ func (processor *notificationProcessor) newEventSlackAttachment(mattermostUserID
 	}
 
 	if n.Event.ResponseRequested && !n.Event.IsOrganizer {
-		sa.Actions = processor.newPostActionForEventResponse(mattermostUserID, n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
+		resp := ""
+		if n.Event.ResponseStatus != nil {
+			resp = n.Event.ResponseStatus.Response
+		}
+		sa.Actions = newPostActionForEventResponse(processor.Env, mattermostUserID, n.Event.ID, resp, processor.actionURL(config.PathRespond))
 	}
 	return sa
 }
@@ -148,7 +161,11 @@ func (processor *notificationProcessor) updatedEventSlackAttachment(mattermostUs
 	}
 
 	if n.Event.ResponseRequested && !n.Event.IsOrganizer && !n.Event.IsCancelled {
-		sa.Actions = processor.newPostActionForEventResponse(mattermostUserID, n.Event.ID, n.Event.ResponseStatus.Response, processor.actionURL(config.PathRespond))
+		resp := ""
+		if n.Event.ResponseStatus != nil {
+			resp = n.Event.ResponseStatus.Response
+		}
+		sa.Actions = newPostActionForEventResponse(processor.Env, mattermostUserID, n.Event.ID, resp, processor.actionURL(config.PathRespond))
 	}
 	return true, sa
 }
@@ -163,50 +180,105 @@ func isImportantChange(fieldName string) bool {
 }
 
 func (processor *notificationProcessor) actionURL(action string) string {
+	// Relative plugin path — DoLocalRequest routes in-process (same as status-change buttons).
 	return fmt.Sprintf("%s%s%s", processor.Config.PluginURLPath, config.PathPostAction, action)
 }
 
-func (processor *notificationProcessor) newPostActionForEventResponse(mattermostUserID, eventID, response, url string) []*model.PostAction {
-	context := map[string]interface{}{
-		config.EventIDKey: eventID,
-	}
+// EventResponsePostActions builds Going / Maybe / Not going buttons.
+// The selected option is primary and Disabled (cannot be pressed again).
+// After "Not going", Going/Maybe are also disabled: Yandex removes the CalDAV
+// object on decline, so PARTSTAT cannot be changed until the event is restored
+// in the Yandex UI (there is no public CalDAV undecline).
+func EventResponsePostActions(env Env, mattermostUserID, eventID, selectedOption, respondURL string) []*model.PostAction {
+	return newPostActionForEventResponse(env, mattermostUserID, eventID, selectedOption, respondURL)
+}
 
-	pa := &model.PostAction{
-		Name: processor.Tr(mattermostUserID, "ycal.notify.response_control", "Response", nil),
-		Type: model.PostActionTypeSelect,
-		Integration: &model.PostActionIntegration{
-			URL:     url,
-			Context: context,
-		},
+func optionFromResponseStatus(response string) string {
+	switch response {
+	case ResponseYes, OptionYes:
+		return OptionYes
+	case ResponseNo, OptionNo:
+		return OptionNo
+	case ResponseMaybe, remote.EventResponseStatusTentative, OptionMaybe:
+		return OptionMaybe
+	default:
+		return ""
 	}
+}
+
+func safeHTTPURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		return ""
+	}
+	return raw
+}
+
+// SanitizeAttachmentLinks clears invalid author/title URLs so Mattermost UpdatePost
+// does not warn (e.g. bare "mailto:" when organizer address is missing).
+func SanitizeAttachmentLinks(sa *model.SlackAttachment) {
+	if sa == nil {
+		return
+	}
+	if sa.AuthorLink == "mailto:" || strings.TrimSpace(sa.AuthorLink) == "" {
+		sa.AuthorLink = ""
+	}
+	sa.TitleLink = safeHTTPURL(sa.TitleLink)
+}
+
+func newPostActionForEventResponse(env Env, mattermostUserID, eventID, response, respondURL string) []*model.PostAction {
+	selected := optionFromResponseStatus(response)
+	// ponytail: Yandex hides declined invites from CalDAV (GET→404); no undecline API.
+	lockAfterDecline := selected == OptionNo
 
 	opts := []struct {
 		val  string
 		text string
 		id   string
 	}{
-		{OptionNotResponded, "Not responded", "ycal.notify.option.not_responded"},
-		{OptionYes, "Yes", "ycal.notify.option.yes"},
-		{OptionNo, "No", "ycal.notify.option.no"},
+		{OptionYes, "Going", "ycal.notify.option.yes"},
 		{OptionMaybe, "Maybe", "ycal.notify.option.maybe"},
+		{OptionNo, "Not going", "ycal.notify.option.no"},
 	}
+
+	actions := make([]*model.PostAction, 0, len(opts))
 	for _, o := range opts {
-		pa.Options = append(pa.Options, &model.PostActionOptions{
-			Text:  processor.Tr(mattermostUserID, o.id, o.text, nil),
-			Value: o.val,
-		})
+		pa := &model.PostAction{
+			// Id left empty: Mattermost GenerateActionIds() fills alphanumeric-only ids.
+			// Custom ids with "_" 404 because the API route is /actions/{action_id:[A-Za-z0-9]+}.
+			Name: env.Tr(mattermostUserID, o.id, o.text, nil),
+			Type: model.PostActionTypeButton,
+		}
+		isSelected := o.val == selected
+		locked := lockAfterDecline && o.val != OptionNo
+		if isSelected {
+			pa.Style = "primary"
+			pa.Disabled = true
+			pa.Integration = &model.PostActionIntegration{
+				URL: respondURL,
+				Context: map[string]interface{}{
+					config.EventIDKey: eventID,
+					"selected_option": o.val,
+				},
+			}
+		} else if locked {
+			pa.Disabled = true
+		} else {
+			pa.Integration = &model.PostActionIntegration{
+				URL: respondURL,
+				Context: map[string]interface{}{
+					config.EventIDKey: eventID,
+					"selected_option": o.val,
+				},
+			}
+		}
+		actions = append(actions, pa)
 	}
-	switch response {
-	case ResponseNone:
-		pa.DefaultOption = OptionNotResponded
-	case ResponseYes:
-		pa.DefaultOption = OptionYes
-	case ResponseNo:
-		pa.DefaultOption = OptionNo
-	case ResponseMaybe:
-		pa.DefaultOption = OptionMaybe
-	}
-	return []*model.PostAction{pa}
+	return actions
 }
 
 func (processor *notificationProcessor) eventToFields(mattermostUserID string, e *remote.Event, timezone string, isMilitary bool) fields.Fields {
@@ -420,9 +492,9 @@ func (processor *notificationProcessor) localizeResponseStatus(mattermostUserID 
 
 	switch status.Response {
 	case remote.EventResponseStatusAccepted:
-		return processor.Tr(mattermostUserID, "ycal.notify.option.yes", "Yes", nil)
+		return processor.Tr(mattermostUserID, "ycal.notify.option.yes", "Going", nil)
 	case remote.EventResponseStatusDeclined:
-		return processor.Tr(mattermostUserID, "ycal.notify.option.no", "No", nil)
+		return processor.Tr(mattermostUserID, "ycal.notify.option.no", "Not going", nil)
 	case remote.EventResponseStatusTentative:
 		return processor.Tr(mattermostUserID, "ycal.notify.option.maybe", "Maybe", nil)
 	default:

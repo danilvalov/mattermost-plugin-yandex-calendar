@@ -5,26 +5,83 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mattermost/mattermost/server/public/model"
+
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 )
 
-func TestLocalizeResponseStatus(t *testing.T) {
+func TestEventResponsePostActions(t *testing.T) {
 	t.Parallel()
 
-	p := &notificationProcessor{Env: Env{Config: &config.Config{}, Dependencies: &Dependencies{}}}
+	env := Env{Config: &config.Config{PluginURL: "http://localhost:8065/plugins/x"}, Dependencies: &Dependencies{}}
+	actions := EventResponsePostActions(env, "u1", "ev1", remote.EventResponseStatusAccepted, "http://localhost:8065/plugins/x/action/respond")
+	if len(actions) != 3 {
+		t.Fatalf("want 3 actions, got %d", len(actions))
+	}
+	if actions[0].Type != model.PostActionTypeButton {
+		t.Fatalf("want button type, got %q", actions[0].Type)
+	}
+	if actions[0].Style != "primary" || !actions[0].Disabled || actions[0].Integration == nil {
+		t.Fatalf("selected Going should be primary+disabled with integration: %#v", actions[0])
+	}
+	if actions[1].Disabled || actions[1].Integration == nil || actions[2].Integration == nil {
+		t.Fatal("unselected buttons must stay enabled with Integration")
+	}
+	if actions[1].Integration.Context["selected_option"] != OptionMaybe {
+		t.Fatalf("maybe context: %#v", actions[1].Integration.Context)
+	}
 
-	if got := p.localizeResponseStatus("u1", nil); got != "Not responded" {
-		t.Fatalf("nil status: got %q", got)
+	none := EventResponsePostActions(env, "u1", "ev1", "", "http://localhost:8065/plugins/x/action/respond")
+	for i, a := range none {
+		if a.Style == "primary" || a.Disabled || a.Integration == nil {
+			t.Fatalf("unset status: action %d should be clickable: %#v", i, a)
+		}
 	}
-	if got := p.localizeResponseStatus("u1", &remote.EventResponseStatus{Response: remote.EventResponseStatusAccepted}); got != "Yes" {
-		t.Fatalf("accepted: got %q", got)
+
+	declined := EventResponsePostActions(env, "u1", "ev1", OptionNo, "http://localhost:8065/plugins/x/action/respond")
+	if !declined[0].Disabled || declined[0].Integration != nil {
+		t.Fatalf("after decline, Going must be locked without integration: %#v", declined[0])
 	}
-	if got := p.localizeResponseStatus("u1", &remote.EventResponseStatus{Response: remote.EventResponseStatusDeclined}); got != "No" {
-		t.Fatalf("declined: got %q", got)
+	if !declined[1].Disabled || declined[1].Integration != nil {
+		t.Fatalf("after decline, Maybe must be locked without integration: %#v", declined[1])
 	}
-	if got := p.localizeResponseStatus("u1", &remote.EventResponseStatus{Response: remote.EventResponseStatusTentative}); got != "Maybe" {
-		t.Fatalf("tentative: got %q", got)
+	if declined[2].Style != "primary" || !declined[2].Disabled || declined[2].Integration == nil {
+		t.Fatalf("after decline, Not going is selected: %#v", declined[2])
+	}
+}
+
+func TestSanitizeAttachmentLinks(t *testing.T) {
+	t.Parallel()
+	sa := &model.SlackAttachment{AuthorLink: "mailto:", TitleLink: "not-a-url"}
+	SanitizeAttachmentLinks(sa)
+	if sa.AuthorLink != "" || sa.TitleLink != "" {
+		t.Fatalf("expected cleared links, got author=%q title=%q", sa.AuthorLink, sa.TitleLink)
+	}
+	sa = &model.SlackAttachment{AuthorLink: "mailto:a@b.c", TitleLink: "https://calendar.yandex.ru/x"}
+	SanitizeAttachmentLinks(sa)
+	if sa.AuthorLink != "mailto:a@b.c" || sa.TitleLink != "https://calendar.yandex.ru/x" {
+		t.Fatalf("valid links must stay: %#v", sa)
+	}
+}
+
+func TestOptionFromResponseStatus(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		in, want string
+	}{
+		{remote.EventResponseStatusAccepted, OptionYes},
+		{remote.EventResponseStatusDeclined, OptionNo},
+		{remote.EventResponseStatusTentative, OptionMaybe},
+		{ResponseMaybe, OptionMaybe},
+		{OptionYes, OptionYes},
+		{"", ""},
+		{remote.EventResponseStatusNotAnswered, ""},
+	}
+	for _, tc := range cases {
+		if got := optionFromResponseStatus(tc.in); got != tc.want {
+			t.Fatalf("optionFromResponseStatus(%q)=%q want %q", tc.in, got, tc.want)
+		}
 	}
 }
 
@@ -48,7 +105,7 @@ func TestEventToFields_NilSafeAndLocalizedStatus(t *testing.T) {
 
 	ff := p.eventToFields("u1", ev, "UTC", false)
 
-	if got := ff[FieldResponseStatus].Strings()[0]; got != "No" {
+	if got := ff[FieldResponseStatus].Strings()[0]; got != "Not going" {
 		t.Fatalf("response status: got %q", got)
 	}
 	if got := ff[FieldOrganizer].Strings()[0]; got != "[Not defined](mailto:)" {

@@ -85,15 +85,22 @@ func (api *api) postActionRespond(w http.ResponseWriter, req *http.Request) {
 	if eventID == "" {
 		return
 	}
-	err := calendar.RespondToEvent(user, eventID, option)
-	if err != nil && !isAcceptedError(err) && !isNotFoundError(err) && !isCanceledError(err) {
-		utils.SlackAttachmentError(w, "Error: Failed to respond to event: "+err.Error())
+	if option == "" {
+		utils.SlackAttachmentError(w, "Error: missing response option")
 		return
 	}
 
-	if err != nil && isCanceledError(err) {
-		utils.SlackAttachmentError(w, "Error: Cannot respond to the event because it is already canceled.")
-		return
+	err := calendar.RespondToEvent(user, eventID, option)
+	if err != nil {
+		api.Logger.Warnf("RespondToEvent failed user=%s event=%s option=%s err=%v", user.MattermostUserID, eventID, option, err)
+		if isCanceledError(err) {
+			utils.SlackAttachmentError(w, "Error: Cannot respond to the event because it is already canceled.")
+			return
+		}
+		if !isAcceptedError(err) && !isNotFoundError(err) {
+			utils.SlackAttachmentError(w, "Error: Failed to respond to event: "+err.Error())
+			return
+		}
 	}
 
 	p, appErr := api.PluginAPI.GetPost(postID)
@@ -109,41 +116,78 @@ func (api *api) postActionRespond(w http.ResponseWriter, req *http.Request) {
 	}
 
 	sa := sas[0]
-
-	if err == nil || isAcceptedError(err) {
-		sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
-			Title: "Response",
-			Value: fmt.Sprintf("You have %s this event", prettyOption(option)),
-			Short: false,
-		})
+	engine.SanitizeAttachmentLinks(sa)
+	respondURL := fmt.Sprintf("%s%s%s", api.Config.PluginURLPath, config.PathPostAction, config.PathRespond)
+	switch {
+	case err == nil || isAcceptedError(err):
+		sa.Actions = engine.EventResponsePostActions(api.Env, user.MattermostUserID, eventID, option, respondURL)
+		syncResponseStatusField(sa, api.Env, user.MattermostUserID, option)
+	case isNotFoundError(err):
+		// Object gone from CalDAV (typical after decline). Lock Going/Maybe so the
+		// post matches what CalDAV can still do.
+		sa.Actions = engine.EventResponsePostActions(api.Env, user.MattermostUserID, eventID, engine.OptionNo, respondURL)
+		syncResponseStatusField(sa, api.Env, user.MattermostUserID, engine.OptionNo)
 	}
 
-	sa.Actions = []*model.PostAction{}
-	postResponse := model.PostActionIntegrationResponse{}
 	model.ParseSlackAttachment(p, []*model.SlackAttachment{sa})
-
-	postResponse.Update = p
-
-	if err != nil && isNotFoundError(err) {
-		postResponse.EphemeralText = "Event has changed since this message. Please change your status directly on MS Calendar."
+	if updateErr := api.Poster.UpdatePost(p); updateErr != nil {
+		api.Logger.Warnf("UpdatePost after RSVP failed post=%s err=%v", postID, updateErr)
+		utils.SlackAttachmentError(w, "Error: Failed to update the post: "+updateErr.Error())
+		return
 	}
+
+	postResponse := model.PostActionIntegrationResponse{
+		Update: p,
+	}
+	if err != nil && isNotFoundError(err) {
+		postResponse.EphemeralText = api.Tr(user.MattermostUserID, "ycal.notify.response_event_gone",
+			"This event is no longer available over CalDAV (Yandex hides it after \"Not going\"). Restore it in Yandex Calendar first.", nil)
+	} else if option == engine.OptionNo && (err == nil || isAcceptedError(err)) {
+		label := responseOptionLabel(api.Env, user.MattermostUserID, option)
+		saved := api.Tr(user.MattermostUserID, "ycal.notify.response_saved",
+			"Response saved: {{.Option}}", map[string]any{"Option": label})
+		hint := api.Tr(user.MattermostUserID, "ycal.notify.response_declined_locked",
+			"Going / Maybe are locked here: Yandex removes declined events from CalDAV. Restore the event in Yandex Calendar to change your response.", nil)
+		postResponse.EphemeralText = saved + "\n" + hint
+	} else {
+		label := responseOptionLabel(api.Env, user.MattermostUserID, option)
+		postResponse.EphemeralText = api.Tr(user.MattermostUserID, "ycal.notify.response_saved",
+			"Response saved: {{.Option}}", map[string]any{"Option": label})
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(postResponse); err != nil {
-		utils.SlackAttachmentError(w, "Error: unable to write response, "+err.Error())
+	if encErr := json.NewEncoder(w).Encode(postResponse); encErr != nil {
+		utils.SlackAttachmentError(w, "Error: unable to write response, "+encErr.Error())
 	}
 }
 
-func prettyOption(option string) string {
+func responseOptionLabel(env engine.Env, mattermostUserID, option string) string {
 	switch option {
 	case engine.OptionYes:
-		return "accepted"
+		return env.Tr(mattermostUserID, "ycal.notify.option.yes", "Going", nil)
 	case engine.OptionNo:
-		return "declined"
+		return env.Tr(mattermostUserID, "ycal.notify.option.no", "Not going", nil)
 	case engine.OptionMaybe:
-		return "tentatively accepted"
+		return env.Tr(mattermostUserID, "ycal.notify.option.maybe", "Maybe", nil)
 	default:
-		return ""
+		return option
 	}
+}
+
+func syncResponseStatusField(sa *model.SlackAttachment, env engine.Env, mattermostUserID, option string) {
+	title := env.Tr(mattermostUserID, "ycal.notify.field.response_status", "ResponseStatus", nil)
+	value := responseOptionLabel(env, mattermostUserID, option)
+	for _, f := range sa.Fields {
+		if f != nil && f.Title == title {
+			f.Value = value
+			return
+		}
+	}
+	sa.Fields = append(sa.Fields, &model.SlackAttachmentField{
+		Title: title,
+		Value: value,
+		Short: true,
+	})
 }
 
 func (api *api) postActionConfirmStatusChange(w http.ResponseWriter, req *http.Request) {

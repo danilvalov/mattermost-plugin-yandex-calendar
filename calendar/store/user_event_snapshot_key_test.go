@@ -52,6 +52,7 @@ func TestUserEventSnapshotKey(t *testing.T) {
 
 func TestTryReserveNotification_duplicateKeyReturnsFalseNil(t *testing.T) {
 	mockAPI, st, _, _, _ := GetMockSetup(t)
+	mockAPI.On("KVGet", mock.Anything).Return(nil, nil).Times(1)
 	mockAPI.On("KVSetWithOptions", mock.Anything, []byte("1"), mock.Anything).Return(false, &model.AppError{
 		Message: "duplicate key value violates unique constraint \"pluginkeyvaluestore_pkey\"",
 	}).Times(1)
@@ -59,5 +60,16 @@ func TestTryReserveNotification_duplicateKeyReturnsFalseNil(t *testing.T) {
 	ok, err := st.TryReserveNotification("user_key", time.Minute)
 	require.NoError(t, err)
 	require.False(t, ok)
+	mockAPI.AssertExpectations(t)
+}
+
+func TestTryReserveNotification_existingKeySkipsInsert(t *testing.T) {
+	mockAPI, st, _, _, _ := GetMockSetup(t)
+	mockAPI.On("KVGet", mock.Anything).Return([]byte("1"), nil).Times(1)
+
+	ok, err := st.TryReserveNotification("user_key", time.Minute)
+	require.NoError(t, err)
+	require.False(t, ok)
+	mockAPI.AssertNotCalled(t, "KVSetWithOptions", mock.Anything, mock.Anything, mock.Anything)
 	mockAPI.AssertExpectations(t)
 }

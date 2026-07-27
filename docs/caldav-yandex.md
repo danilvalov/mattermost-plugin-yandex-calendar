@@ -12,3 +12,4 @@ This plugin implements:
 - **Create / update object**: `PUT` with `Content-Type: text/calendar` — same as CalDAV `PutCalendarObject` ([draft-debian-calendar](https://github.com/apple/ccs-calendarserver/blob/master/doc/Extensions/caldav-put.txt) behaviour as implemented by clients).
 - **Read**: `GET` on the calendar object resource, or `REPORT` `calendar-query` to locate by `UID`.
 - **Accept / decline / tentative**: load the event resource, set `ATTENDEE;PARTSTAT=` for the authenticated user’s `mailto:`, `PUT` the updated calendar (common client behaviour; effectiveness depends on the server accepting in-place updates for invitations).
+- **After decline**: Yandex removes (or hides) the attendee copy from CalDAV — subsequent `GET` on the same href returns **404**. There is no documented CalDAV “undecline”; restoring via the Yandex web UI recreates the CalDAV object. The plugin therefore locks **Going** / **Maybe** on the Mattermost post after **Not going**.

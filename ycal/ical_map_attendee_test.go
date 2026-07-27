@@ -97,7 +97,30 @@ func TestApplyCurrentUserContext(t *testing.T) {
 	if ev.IsOrganizer {
 		t.Fatal("expected not organizer")
 	}
+	if !ev.ResponseRequested {
+		t.Fatal("expected ResponseRequested for invited attendee")
+	}
 	if ev.ResponseStatus == nil || ev.ResponseStatus.Response != remote.EventResponseStatusAccepted {
 		t.Fatalf("unexpected response status: %#v", ev.ResponseStatus)
+	}
+
+	org := &remote.Event{
+		Organizer: &remote.Attendee{
+			EmailAddress: &remote.EmailAddress{Address: "boss@example.com"},
+		},
+		ResponseStatus: &remote.EventResponseStatus{Response: remote.EventResponseStatusNotAnswered},
+		Attendees: []*remote.Attendee{
+			{
+				EmailAddress: &remote.EmailAddress{Address: "boss@example.com"},
+				Status:       &remote.EventResponseStatus{Response: remote.EventResponseStatusAccepted},
+			},
+		},
+	}
+	applyCurrentUserContext(org, "boss@example.com")
+	if !org.IsOrganizer {
+		t.Fatal("expected organizer")
+	}
+	if org.ResponseRequested {
+		t.Fatal("organizer must not get ResponseRequested")
 	}
 }

@@ -37,6 +37,7 @@ func (c *client) GetEvent(_ string, eventID string) (*remote.Event, error) {
 		if ev.ICalUID == "" {
 			ev.ICalUID = ev.ID
 		}
+		applyCurrentUserContext(ev, c.email)
 		return ev, nil
 	}
 	return nil, errors.New("ycal: no VEVENT in object")

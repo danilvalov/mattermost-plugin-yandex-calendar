@@ -94,6 +94,8 @@ func applyCurrentUserContext(ev *remote.Event, userEmail string) {
 		}
 		if normalizeEmail(a.EmailAddress.Address) == normUser {
 			ev.ResponseStatus = &remote.EventResponseStatus{Response: a.Status.Response}
+			// Show RSVP control in notifications when the user is an invited attendee.
+			ev.ResponseRequested = !ev.IsOrganizer
 			return
 		}
 	}

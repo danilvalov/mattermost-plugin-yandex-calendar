@@ -153,6 +153,10 @@ func (s *pluginStore) StoreUserEvent(mattermostUserID string, event *Event) erro
 	snapKey := UserEventSnapshotKey(event.Remote)
 	err = s.eventKV.StoreTTL(eventKey(mattermostUserID, snapKey), data, ttl)
 	if err != nil {
+		// Rare race on older MM paths (update-then-insert); value already present.
+		if kvIsDuplicateInsert(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -184,8 +188,17 @@ func (s *pluginStore) TryReserveNotification(dedupeKey string, ttl time.Duration
 		return false, errors.New("empty dedupe key")
 	}
 
+	key := "notif_" + dedupeKey
+	// Avoid Mattermost atomic INSERT when the key already exists — that path always
+	// hits Postgres unique_violation and spam-logs ERROR even though the race is handled.
+	if _, err := s.eventKV.Load(key); err == nil {
+		return false, nil
+	} else if !errors.Is(err, ErrNotFound) {
+		return false, err
+	}
+
 	data := []byte("1")
-	ok, err := s.eventKV.StoreWithOptions("notif_"+dedupeKey, data, model.PluginKVSetOptions{
+	ok, err := s.eventKV.StoreWithOptions(key, data, model.PluginKVSetOptions{
 		Atomic:          true,
 		OldValue:        nil,
 		ExpireInSeconds: int64(ttl.Seconds()),

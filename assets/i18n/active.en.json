@@ -293,15 +293,31 @@
     },
     {
         "id": "ycal.notify.option.yes",
-        "translation": "Yes"
+        "translation": "Going"
     },
     {
         "id": "ycal.notify.option.no",
-        "translation": "No"
+        "translation": "Not going"
     },
     {
         "id": "ycal.notify.option.maybe",
         "translation": "Maybe"
+    },
+    {
+        "id": "ycal.notify.response_saved",
+        "translation": "Response saved: {{.Option}}"
+    },
+    {
+        "id": "ycal.notify.response_declined_locked",
+        "translation": "Going / Maybe are locked here: Yandex removes declined events from CalDAV. Restore the event in Yandex Calendar to change your response."
+    },
+    {
+        "id": "ycal.notify.response_event_changed",
+        "translation": "Event has changed since this message. Please change your status directly in the calendar."
+    },
+    {
+        "id": "ycal.notify.response_event_gone",
+        "translation": "This event is no longer available over CalDAV (Yandex hides it after \"Not going\"). Restore it in Yandex Calendar first."
     },
     {
         "id": "ycal.notify.not_defined",

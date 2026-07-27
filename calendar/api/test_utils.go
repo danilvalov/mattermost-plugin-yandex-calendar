@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine/mock_plugin_api"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
@@ -71,6 +72,10 @@ func GetMockSetup(t *testing.T) (*api, *mock_store.MockStore, *mock_bot.MockPost
 	mockClient := mock_remote.NewMockClient(ctrl)
 
 	env := engine.Env{
+		Config: &config.Config{
+			PluginURLPath: "/plugins/com.mattermost.yandex-calendar",
+			PluginURL:     "http://localhost:8065/plugins/com.mattermost.yandex-calendar",
+		},
 		Dependencies: &engine.Dependencies{
 			Store:     mockStore,
 			Poster:    mockPoster,

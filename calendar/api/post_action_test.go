@@ -428,12 +428,16 @@ func TestPostActionRespond(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			api, mockStore, _, mockRemote, mockPluginAPI, _, _, mockClient := GetMockSetup(t)
+			api, mockStore, mockPoster, mockRemote, mockPluginAPI, mockLogger, _, mockClient := GetMockSetup(t)
+			mockLogger.EXPECT().Warnf(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 			req := httptest.NewRequest(http.MethodPost, "/postActionAccept", nil)
 			rec := httptest.NewRecorder()
 
 			tc.setup(req, api, mockStore, mockRemote, mockPluginAPI, mockClient)
+			if tc.name == "Action responded successfully" {
+				mockPoster.EXPECT().UpdatePost(gomock.Any()).Return(nil).Times(1)
+			}
 			api.postActionRespond(rec, req)
 
 			tc.assertions(t, rec)
