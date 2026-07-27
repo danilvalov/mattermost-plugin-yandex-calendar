@@ -435,7 +435,7 @@ func TestCreateEvent(t *testing.T) {
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusCreated, rec.Result().StatusCode)
 				responseBody, _ := io.ReadAll(rec.Body)
-				assert.Contains(t, string(responseBody), "true")
+				assert.Contains(t, string(responseBody), "subject")
 			},
 		},
 		{
@@ -460,7 +460,7 @@ func TestCreateEvent(t *testing.T) {
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusCreated, rec.Result().StatusCode)
 				responseBody, _ := io.ReadAll(rec.Body)
-				assert.Contains(t, string(responseBody), "true")
+				assert.Contains(t, string(responseBody), "subject")
 			},
 		},
 		{
@@ -483,7 +483,7 @@ func TestCreateEvent(t *testing.T) {
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusCreated, rec.Result().StatusCode)
 				responseBody, _ := io.ReadAll(rec.Body)
-				assert.Contains(t, string(responseBody), "true")
+				assert.Contains(t, string(responseBody), "subject")
 			},
 		},
 		{
@@ -503,7 +503,7 @@ func TestCreateEvent(t *testing.T) {
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusCreated, rec.Result().StatusCode)
 				responseBody, _ := io.ReadAll(rec.Body)
-				assert.Contains(t, string(responseBody), "true")
+				assert.Contains(t, string(responseBody), "subject")
 			},
 		},
 	}

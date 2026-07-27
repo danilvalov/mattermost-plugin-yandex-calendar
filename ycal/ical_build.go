@@ -40,11 +40,17 @@ func buildCalendarFromRemoteEvent(in *remote.Event, uid, organizerEmail string) 
 		if start.IsZero() || end.IsZero() {
 			return nil, fmt.Errorf("invalid all-day range")
 		}
+		// iCal all-day DTEND is exclusive (next day after last inclusive day).
+		startDay := time.Date(start.UTC().Year(), start.UTC().Month(), start.UTC().Day(), 0, 0, 0, 0, time.UTC)
+		endDay := time.Date(end.UTC().Year(), end.UTC().Month(), end.UTC().Day(), 0, 0, 0, 0, time.UTC)
+		if !endDay.After(startDay) {
+			endDay = startDay.Add(24 * time.Hour)
+		}
 		ds := ical.NewProp(ical.PropDateTimeStart)
-		ds.SetDate(start.UTC())
+		ds.SetDate(startDay)
 		ve.Props.Set(ds)
 		de := ical.NewProp(ical.PropDateTimeEnd)
-		de.SetDate(end.UTC())
+		de.SetDate(endDay)
 		ve.Props.Set(de)
 	} else {
 		start := in.Start.Time()

@@ -12,6 +12,9 @@ import (
 type Calendar interface {
 	CreateCalendar(user *User, calendar *remote.Calendar) (*remote.Calendar, error)
 	CreateEvent(user *User, event *remote.Event, mattermostUserIDs []string) (*remote.Event, error)
+	UpdateEvent(user *User, event *remote.Event) (*remote.Event, error)
+	DeleteEvent(user *User, eventID string) error
+	GetEvent(user *User, eventID string) (*remote.Event, error)
 	DeleteCalendar(user *User, calendarID string) error
 	FindMeetingTimes(user *User, meetingParams *remote.FindMeetingTimesParameters) (*remote.MeetingTimeSuggestionResults, error)
 	GetCalendars(user *User) ([]*remote.Calendar, error)
@@ -94,6 +97,60 @@ func (m *mscalendar) CreateEvent(user *User, event *remote.Event, mattermostUser
 	}
 
 	return m.client.CreateEvent(event)
+}
+
+func (m *mscalendar) GetEvent(user *User, eventID string) (*remote.Event, error) {
+	err := m.Filter(
+		withClient,
+		withUserExpanded(user),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return m.client.GetEvent(user.Remote.ID, eventID)
+}
+
+func eventEditable(ev *remote.Event) bool {
+	return ev.Editable()
+}
+
+func (m *mscalendar) UpdateEvent(user *User, event *remote.Event) (*remote.Event, error) {
+	err := m.Filter(
+		withClient,
+		withUserExpanded(user),
+	)
+	if err != nil {
+		return nil, err
+	}
+	if event == nil || event.ID == "" {
+		return nil, ErrBadRequest
+	}
+	existing, err := m.client.GetEvent(user.Remote.ID, event.ID)
+	if err != nil {
+		return nil, err
+	}
+	if !eventEditable(existing) {
+		return nil, ErrForbidden
+	}
+	return m.client.UpdateEvent(event)
+}
+
+func (m *mscalendar) DeleteEvent(user *User, eventID string) error {
+	err := m.Filter(
+		withClient,
+		withUserExpanded(user),
+	)
+	if err != nil {
+		return err
+	}
+	existing, err := m.client.GetEvent(user.Remote.ID, eventID)
+	if err != nil {
+		return err
+	}
+	if !eventEditable(existing) {
+		return ErrForbidden
+	}
+	return m.client.DeleteEvent(eventID)
 }
 
 func (m *mscalendar) DeleteCalendar(user *User, calendarID string) error {

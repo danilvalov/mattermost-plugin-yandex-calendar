@@ -1,5 +1,5 @@
 diff --git a/caldav/client.go b/caldav/client.go
-index af9b98f..04a9fbc 100644
+index af9b98f..344859f 100644
 --- a/caldav/client.go
 +++ b/caldav/client.go
 @@ -335,11 +335,13 @@ func populateCalendarObject(co *CalendarObject, h http.Header) error {
@@ -20,6 +20,35 @@ index af9b98f..04a9fbc 100644
  	}
  	if contentLength := h.Get("Content-Length"); contentLength != "" {
  		n, err := strconv.ParseInt(contentLength, 10, 64)
+@@ -396,7 +398,8 @@ func (c *Client) GetCalendarObject(ctx context.Context, path string) (*CalendarO
+ }
+ 
+ func (c *Client) PutCalendarObject(ctx context.Context, path string, cal *ical.Calendar) (*CalendarObject, error) {
+-	// TODO: add support for If-None-Match and If-Match
++	// ponytail: no If-Match — Yandex ETags are weak/unquoted; last-write-wins on concurrent DnD.
++	// Upgrade: pass ETag into Put and set If-Match when servers return strong ETags.
+ 
+ 	// TODO: some servers want a Content-Length header, so we can't stream the
+ 	// request body here. See the Radicale issue:
+@@ -425,3 +428,18 @@ func (c *Client) PutCalendarObject(ctx context.Context, path string, cal *ical.C
+ 	}
+ 	return co, nil
+ }
++
++// DeleteCalendarObject deletes a calendar object at path (HTTP DELETE).
++func (c *Client) DeleteCalendarObject(ctx context.Context, path string) error {
++	req, err := c.ic.NewRequest(http.MethodDelete, path, nil)
++	if err != nil {
++		return err
++	}
++
++	resp, err := c.ic.Do(req.WithContext(ctx))
++	if err != nil {
++		return err
++	}
++	resp.Body.Close()
++	return nil
++}
 diff --git a/caldav/etag_header_test.go b/caldav/etag_header_test.go
 new file mode 100644
 index 0000000..f756616

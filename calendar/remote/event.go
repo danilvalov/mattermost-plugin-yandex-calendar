@@ -30,7 +30,16 @@ type Event struct {
 	IsOrganizer                bool                 `json:"isOrganizer,omitempty"`
 	IsCancelled                bool                 `json:"isCancelled,omitempty"`
 	IsAllDay                   bool                 `json:"isAllDay,omitempty"`
+	IsRecurring                bool                 `json:"isRecurring,omitempty"`
 	ResponseRequested          bool                 `json:"responseRequested,omitempty"`
+}
+
+// Editable reports whether the calendar UI may offer content mutation.
+// Invitee copies accept CalDAV PUT with 2xx then silently keep organizer fields
+// (observed 2026-07 on Yandex, even when web UI “participants can edit” is on).
+// RSVP still works via PARTSTAT updates. Recurring/cancelled stay read-only.
+func (ev *Event) Editable() bool {
+	return ev != nil && ev.IsOrganizer && !ev.IsCancelled && !ev.IsRecurring
 }
 
 type ItemBody struct {

@@ -41,7 +41,12 @@ func Init(h *httputils.Handler, env engine.Env, notificationProcessor engine.Not
 
 	apiRoutes := h.Router.PathPrefix(config.InternalAPIPath).Subrouter()
 	eventsRouter := apiRoutes.PathPrefix(config.PathEvents).Subrouter()
+	eventsRouter.HandleFunc("", api.listEvents).Methods(http.MethodGet)
+	eventsRouter.HandleFunc("", api.patchEvent).Methods(http.MethodPatch)
+	eventsRouter.HandleFunc("", api.deleteEvent).Methods(http.MethodDelete)
 	eventsRouter.HandleFunc(config.PathCreate, api.createEvent).Methods(http.MethodPost)
+	eventsRouter.HandleFunc(config.PathGet, api.getEvent).Methods(http.MethodGet)
+	eventsRouter.HandleFunc(config.PathRespond, api.respondEvent).Methods(http.MethodPost)
 	apiRoutes.HandleFunc(config.PathConnectedUser, api.connectedUserHandler)
 
 	// Returns provider information for the plugin to use

@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gomock "github.com/golang/mock/gomock"
 	store "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	gomock "github.com/golang/mock/gomock"
 	oauth2 "golang.org/x/oauth2"
 )
 
@@ -134,20 +134,6 @@ func (mr *MockStoreMockRecorder) DeleteUser(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*MockStore)(nil).DeleteUser), arg0)
 }
 
-// ForceDeleteUser mocks base method.
-func (m *MockStore) ForceDeleteUser(arg0, arg1 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ForceDeleteUser", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ForceDeleteUser indicates an expected call of ForceDeleteUser.
-func (mr *MockStoreMockRecorder) ForceDeleteUser(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceDeleteUser", reflect.TypeOf((*MockStore)(nil).ForceDeleteUser), arg0, arg1)
-}
-
 // DeleteUserEvent mocks base method.
 func (m *MockStore) DeleteUserEvent(arg0, arg1 string) error {
 	m.ctrl.T.Helper()
@@ -215,6 +201,20 @@ func (m *MockStore) DisconnectUserFromStoreIfNecessary(arg0 error, arg1 string) 
 func (mr *MockStoreMockRecorder) DisconnectUserFromStoreIfNecessary(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisconnectUserFromStoreIfNecessary", reflect.TypeOf((*MockStore)(nil).DisconnectUserFromStoreIfNecessary), arg0, arg1)
+}
+
+// ForceDeleteUser mocks base method.
+func (m *MockStore) ForceDeleteUser(arg0, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ForceDeleteUser", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ForceDeleteUser indicates an expected call of ForceDeleteUser.
+func (mr *MockStoreMockRecorder) ForceDeleteUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForceDeleteUser", reflect.TypeOf((*MockStore)(nil).ForceDeleteUser), arg0, arg1)
 }
 
 // GetConnectedUserCount mocks base method.
@@ -639,21 +639,6 @@ func (mr *MockStoreMockRecorder) StoreUserEvent(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreUserEvent", reflect.TypeOf((*MockStore)(nil).StoreUserEvent), arg0, arg1)
 }
 
-// TryReserveNotification mocks base method.
-func (m *MockStore) TryReserveNotification(arg0 string, arg1 time.Duration) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TryReserveNotification", arg0, arg1)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// TryReserveNotification indicates an expected call of TryReserveNotification.
-func (mr *MockStoreMockRecorder) TryReserveNotification(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryReserveNotification", reflect.TypeOf((*MockStore)(nil).TryReserveNotification), arg0, arg1)
-}
-
 // StoreUserInIndex mocks base method.
 func (m *MockStore) StoreUserInIndex(arg0 *store.User) error {
 	m.ctrl.T.Helper()
@@ -708,6 +693,21 @@ func (m *MockStore) StoreUserWelcomePost(arg0, arg1 string) error {
 func (mr *MockStoreMockRecorder) StoreUserWelcomePost(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreUserWelcomePost", reflect.TypeOf((*MockStore)(nil).StoreUserWelcomePost), arg0, arg1)
+}
+
+// TryReserveNotification mocks base method.
+func (m *MockStore) TryReserveNotification(arg0 string, arg1 time.Duration) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TryReserveNotification", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TryReserveNotification indicates an expected call of TryReserveNotification.
+func (mr *MockStoreMockRecorder) TryReserveNotification(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TryReserveNotification", reflect.TypeOf((*MockStore)(nil).TryReserveNotification), arg0, arg1)
 }
 
 // VerifyOAuth2State mocks base method.

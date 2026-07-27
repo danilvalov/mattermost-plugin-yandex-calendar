@@ -32,29 +32,77 @@ type createEventPayload struct {
 	Date      string   `json:"date"`
 	StartTime string   `json:"start_time"`
 	EndTime   string   `json:"end_time"`
-	// Reminder  bool     `json:"reminder"
+	// ISO fields for calendar product UI (multi-day + past allowed).
+	StartISO    string `json:"start"`
+	EndISO      string `json:"end"`
 	Description string `json:"description,omitempty"`
 	Subject     string `json:"subject"`
 	Location    string `json:"location,omitempty"`
 	ChannelID   string `json:"channel_id"`
 }
 
+func (cep createEventPayload) isISO() bool {
+	return strings.TrimSpace(cep.StartISO) != "" && strings.TrimSpace(cep.EndISO) != ""
+}
+
 func (cep createEventPayload) ToRemoteEvent(loc *time.Location) (*remote.Event, error) {
 	var evt remote.Event
 
 	evt.IsAllDay = cep.AllDay
-
-	start, err := cep.parseStartTime(loc)
-	if err != nil {
-		return nil, errors.Wrap(err, "error parsing start time")
+	evt.Subject = cep.Subject
+	if cep.Description != "" {
+		evt.Body = &remote.ItemBody{
+			Content:     cep.Description,
+			ContentType: "text/plain",
+		}
+	}
+	if cep.Location != "" {
+		evt.Location = &remote.Location{
+			DisplayName: cep.Location,
+		}
 	}
 
-	end, err := cep.parseEndTime(loc)
-	if err != nil {
-		return nil, errors.Wrap(err, "error parsing start time")
+	if cep.isISO() {
+		start, startDate, err := parseRFC3339OrDate(cep.StartISO, loc)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing start")
+		}
+		end, endDate, err := parseRFC3339OrDate(cep.EndISO, loc)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing end")
+		}
+		allDay := cep.AllDay || (startDate && endDate)
+		evt.IsAllDay = allDay
+		tzName := loc.String()
+		if allDay {
+			startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+			endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
+			if !endDay.After(startDay) {
+				return nil, fmt.Errorf("end must be after start")
+			}
+			evt.Start = remote.NewDateTime(startDay, "UTC")
+			evt.End = remote.NewDateTime(endDay, "UTC")
+		} else {
+			if !end.After(start) {
+				return nil, fmt.Errorf("end must be after start")
+			}
+			evt.Start = remote.NewDateTime(start, tzName)
+			evt.End = remote.NewDateTime(end, tzName)
+		}
+		return &evt, nil
 	}
 
 	if !cep.AllDay {
+		start, err := cep.parseStartTime(loc)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing start time")
+		}
+
+		end, err := cep.parseEndTime(loc)
+		if err != nil {
+			return nil, errors.Wrap(err, "error parsing start time")
+		}
+
 		evt.Start = &remote.DateTime{
 			DateTime: start.Format(remote.RFC3339NanoNoTimezone),
 			TimeZone: loc.String(),
@@ -69,27 +117,10 @@ func (cep createEventPayload) ToRemoteEvent(loc *time.Location) (*remote.Event, 
 			return nil, errors.Wrap(err, "error parsing date")
 		}
 
-		evt.Start = &remote.DateTime{
-			DateTime: time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, loc).Format(remote.RFC3339NanoNoTimezone),
-			TimeZone: loc.String(),
-		}
-		evt.End = &remote.DateTime{
-			DateTime: time.Date(date.Year(), date.Month(), date.Day(), 23, 59, 59, 99, loc).Format(remote.RFC3339NanoNoTimezone),
-			TimeZone: loc.String(),
-		}
-	}
-
-	if cep.Description != "" {
-		evt.Body = &remote.ItemBody{
-			Content:     cep.Description,
-			ContentType: "text/plain",
-		}
-	}
-	evt.Subject = cep.Subject
-	if cep.Location != "" {
-		evt.Location = &remote.Location{
-			DisplayName: cep.Location,
-		}
+		startDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+		endDay := startDay.Add(24 * time.Hour)
+		evt.Start = remote.NewDateTime(startDay, "UTC")
+		evt.End = remote.NewDateTime(endDay, "UTC")
 	}
 
 	return &evt, nil
@@ -110,6 +141,30 @@ func (cep createEventPayload) parseDate(loc *time.Location) (time.Time, error) {
 func (cep createEventPayload) IsValid(loc *time.Location) error {
 	if cep.Subject == "" {
 		return fmt.Errorf("subject must not be empty")
+	}
+
+	if cep.isISO() {
+		start, startDate, err := parseRFC3339OrDate(cep.StartISO, loc)
+		if err != nil {
+			return fmt.Errorf("please use a valid start time")
+		}
+		end, endDate, err := parseRFC3339OrDate(cep.EndISO, loc)
+		if err != nil {
+			return fmt.Errorf("please use a valid end time")
+		}
+		allDay := cep.AllDay || (startDate && endDate)
+		if allDay {
+			startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+			endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
+			if !endDay.After(startDay) {
+				return fmt.Errorf("end date cannot be earlier than start date")
+			}
+			return nil
+		}
+		if !end.After(start) {
+			return fmt.Errorf("end date cannot be earlier than start date")
+		}
+		return nil
 	}
 
 	if cep.Date == "" {
@@ -324,5 +379,5 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	httputils.WriteJSONResponse(w, `{"ok": true}`, http.StatusCreated)
+	httputils.WriteJSONResponse(w, eventToDTO(event), http.StatusCreated)
 }

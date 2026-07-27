@@ -9,8 +9,8 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gomock "github.com/golang/mock/gomock"
 	remote "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface.
@@ -151,6 +151,20 @@ func (m *MockClient) DeleteCalendar(arg0 string) error {
 func (mr *MockClientMockRecorder) DeleteCalendar(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCalendar", reflect.TypeOf((*MockClient)(nil).DeleteCalendar), arg0)
+}
+
+// DeleteEvent mocks base method.
+func (m *MockClient) DeleteEvent(arg0 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEvent", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEvent indicates an expected call of DeleteEvent.
+func (mr *MockClientMockRecorder) DeleteEvent(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEvent", reflect.TypeOf((*MockClient)(nil).DeleteEvent), arg0)
 }
 
 // DeleteSubscription mocks base method.
@@ -332,21 +346,6 @@ func (mr *MockClientMockRecorder) ListSubscriptions() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListSubscriptions", reflect.TypeOf((*MockClient)(nil).ListSubscriptions))
 }
 
-// RenewSubscription mocks base method.
-func (m *MockClient) RenewSubscription(arg0, arg1 string, arg2 *remote.Subscription) (*remote.Subscription, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RenewSubscription", arg0, arg1, arg2)
-	ret0, _ := ret[0].(*remote.Subscription)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RenewSubscription indicates an expected call of RenewSubscription.
-func (mr *MockClientMockRecorder) RenewSubscription(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenewSubscription", reflect.TypeOf((*MockClient)(nil).RenewSubscription), arg0, arg1, arg2)
-}
-
 // PollNotifications mocks base method.
 func (m *MockClient) PollNotifications(arg0, arg1 string) ([]*remote.Notification, error) {
 	m.ctrl.T.Helper()
@@ -362,6 +361,21 @@ func (mr *MockClientMockRecorder) PollNotifications(arg0, arg1 interface{}) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PollNotifications", reflect.TypeOf((*MockClient)(nil).PollNotifications), arg0, arg1)
 }
 
+// RenewSubscription mocks base method.
+func (m *MockClient) RenewSubscription(arg0, arg1 string, arg2 *remote.Subscription) (*remote.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RenewSubscription", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*remote.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RenewSubscription indicates an expected call of RenewSubscription.
+func (mr *MockClientMockRecorder) RenewSubscription(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RenewSubscription", reflect.TypeOf((*MockClient)(nil).RenewSubscription), arg0, arg1, arg2)
+}
+
 // TentativelyAcceptEvent mocks base method.
 func (m *MockClient) TentativelyAcceptEvent(arg0 string) error {
 	m.ctrl.T.Helper()
@@ -374,4 +388,19 @@ func (m *MockClient) TentativelyAcceptEvent(arg0 string) error {
 func (mr *MockClientMockRecorder) TentativelyAcceptEvent(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TentativelyAcceptEvent", reflect.TypeOf((*MockClient)(nil).TentativelyAcceptEvent), arg0)
+}
+
+// UpdateEvent mocks base method.
+func (m *MockClient) UpdateEvent(arg0 *remote.Event) (*remote.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEvent", arg0)
+	ret0, _ := ret[0].(*remote.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateEvent indicates an expected call of UpdateEvent.
+func (mr *MockClientMockRecorder) UpdateEvent(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEvent", reflect.TypeOf((*MockClient)(nil).UpdateEvent), arg0)
 }

@@ -74,6 +74,10 @@ func WriteUnauthorizedError(w http.ResponseWriter, err error) {
 	WriteJSONError(w, http.StatusUnauthorized, "Unauthorized.", err)
 }
 
+func WriteForbiddenError(w http.ResponseWriter, err error) {
+	WriteJSONError(w, http.StatusForbidden, "Forbidden.", err)
+}
+
 func WriteJSONResponse(w http.ResponseWriter, data any, statusCode int) error {
 	jsonResponse, err := json.Marshal(data)
 	if err != nil {

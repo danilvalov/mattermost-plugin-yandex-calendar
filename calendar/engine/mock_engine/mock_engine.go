@@ -8,10 +8,10 @@ import (
 	reflect "reflect"
 	time "time"
 
-	gomock "github.com/golang/mock/gomock"
 	engine "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
 	remote "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	store "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockEngine is a mock of Engine interface.
@@ -164,6 +164,20 @@ func (mr *MockEngineMockRecorder) DeleteCalendar(arg0, arg1 interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCalendar", reflect.TypeOf((*MockEngine)(nil).DeleteCalendar), arg0, arg1)
 }
 
+// DeleteEvent mocks base method.
+func (m *MockEngine) DeleteEvent(arg0 *engine.User, arg1 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEvent", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEvent indicates an expected call of DeleteEvent.
+func (mr *MockEngineMockRecorder) DeleteEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEvent", reflect.TypeOf((*MockEngine)(nil).DeleteEvent), arg0, arg1)
+}
+
 // DeleteMyEventSubscription mocks base method.
 func (m *MockEngine) DeleteMyEventSubscription() error {
 	m.ctrl.T.Helper()
@@ -295,6 +309,21 @@ func (mr *MockEngineMockRecorder) GetDaySummaryForUser(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDaySummaryForUser", reflect.TypeOf((*MockEngine)(nil).GetDaySummaryForUser), arg0, arg1)
 }
 
+// GetEvent mocks base method.
+func (m *MockEngine) GetEvent(arg0 *engine.User, arg1 string) (*remote.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEvent", arg0, arg1)
+	ret0, _ := ret[0].(*remote.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEvent indicates an expected call of GetEvent.
+func (mr *MockEngineMockRecorder) GetEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvent", reflect.TypeOf((*MockEngine)(nil).GetEvent), arg0, arg1)
+}
+
 // GetRemoteUser mocks base method.
 func (m *MockEngine) GetRemoteUser(arg0 string) (*remote.User, error) {
 	m.ctrl.T.Helper()
@@ -325,20 +354,6 @@ func (mr *MockEngineMockRecorder) GetTimezone(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTimezone", reflect.TypeOf((*MockEngine)(nil).GetTimezone), arg0)
 }
 
-// IsMilitaryTime mocks base method.
-func (m *MockEngine) IsMilitaryTime(arg0 *engine.User) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsMilitaryTime", arg0)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsMilitaryTime indicates an expected call of IsMilitaryTime.
-func (mr *MockEngineMockRecorder) IsMilitaryTime(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMilitaryTime", reflect.TypeOf((*MockEngine)(nil).IsMilitaryTime), arg0)
-}
-
 // GetUserSettings mocks base method.
 func (m *MockEngine) GetUserSettings(arg0 *engine.User) (*store.Settings, error) {
 	m.ctrl.T.Helper()
@@ -367,6 +382,20 @@ func (m *MockEngine) IsAuthorizedAdmin(arg0 string) (bool, error) {
 func (mr *MockEngineMockRecorder) IsAuthorizedAdmin(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsAuthorizedAdmin", reflect.TypeOf((*MockEngine)(nil).IsAuthorizedAdmin), arg0)
+}
+
+// IsMilitaryTime mocks base method.
+func (m *MockEngine) IsMilitaryTime(arg0 *engine.User) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsMilitaryTime", arg0)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsMilitaryTime indicates an expected call of IsMilitaryTime.
+func (mr *MockEngineMockRecorder) IsMilitaryTime(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsMilitaryTime", reflect.TypeOf((*MockEngine)(nil).IsMilitaryTime), arg0)
 }
 
 // ListRemoteSubscriptions mocks base method.
@@ -528,6 +557,21 @@ func (m *MockEngine) TentativelyAcceptEvent(arg0 *engine.User, arg1 string) erro
 func (mr *MockEngineMockRecorder) TentativelyAcceptEvent(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TentativelyAcceptEvent", reflect.TypeOf((*MockEngine)(nil).TentativelyAcceptEvent), arg0, arg1)
+}
+
+// UpdateEvent mocks base method.
+func (m *MockEngine) UpdateEvent(arg0 *engine.User, arg1 *remote.Event) (*remote.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEvent", arg0, arg1)
+	ret0, _ := ret[0].(*remote.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateEvent indicates an expected call of UpdateEvent.
+func (mr *MockEngineMockRecorder) UpdateEvent(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEvent", reflect.TypeOf((*MockEngine)(nil).UpdateEvent), arg0, arg1)
 }
 
 // ViewCalendar mocks base method.

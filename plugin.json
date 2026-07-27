@@ -24,7 +24,7 @@
                 "key": "AdminUserIDs",
                 "display_name": "Admin User IDs:",
                 "type": "text",
-                "help_text": "List of users authorized to administer the plugin in addition to the System Admins. Must be a comma-separated list of user IDs.\n \n User IDs can be found in **System Console \u003e User Management \u003e Users**. Select the user's name, and the ID is displayed in the top-right corner of the banner.",
+                "help_text": "List of users authorized to administer the plugin in addition to the System Admins. Must be a comma-separated list of user IDs.\n \n User IDs can be found in **System Console > User Management > Users**. Select the user's name, and the ID is displayed in the top-right corner of the banner.",
                 "placeholder": "",
                 "default": null
             },
@@ -74,5 +74,8 @@
                 "secret": true
             }
         ]
+    },
+    "webapp": {
+        "bundle_path": "webapp/dist/main.js"
     }
 }

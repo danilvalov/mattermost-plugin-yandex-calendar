@@ -4,34 +4,27 @@
 package api
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 
-	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
-	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/httputils"
 )
 
 func (api *api) connectedUserHandler(w http.ResponseWriter, r *http.Request) {
-	mattermostUserID := r.Header.Get("Mattermost-User-Id")
-	if mattermostUserID == "" {
-		api.Logger.Errorf("connectedUserHandler, unauthorized user")
-		httputils.WriteUnauthorizedError(w, fmt.Errorf("unauthorized"))
+	user, err := api.loadConnectedUser(r)
+	if err != nil {
+		api.writeStoreOrAuthError(w, err)
 		return
 	}
 
-	_, errStore := api.Store.LoadUser(mattermostUserID)
-	if errStore != nil && !errors.Is(errStore, store.ErrNotFound) {
-		api.Logger.With(bot.LogContext{"err": errStore.Error()}).Errorf("connectedUserHandler, error occurred while loading user from store")
-		httputils.WriteInternalServerError(w, errStore)
-		return
+	email := ""
+	if user.Remote != nil {
+		email = user.Remote.Mail
 	}
-	if errors.Is(errStore, store.ErrNotFound) {
-		api.Logger.With(bot.LogContext{"err": errStore.Error()}).Errorf("connectedUserHandler, user not found in store")
-		httputils.WriteUnauthorizedError(w, fmt.Errorf("unauthorized"))
-		return
-	}
+	timezone := mattermostUserTimezone(api, user.MattermostUserID, "")
 
-	w.Write([]byte(`{"is_connected": true}`))
+	_ = httputils.WriteJSONResponse(w, map[string]any{
+		"is_connected": true,
+		"email":        email,
+		"timezone":     timezone,
+	}, http.StatusOK)
 }

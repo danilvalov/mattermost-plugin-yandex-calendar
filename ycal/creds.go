@@ -17,6 +17,11 @@ func EncodeCalDAVCredentials(email, appPassword string) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
+// DecodeCalDAVCredentials reads email + app password from the stored token blob.
+func DecodeCalDAVCredentials(accessToken string) (email, password string, err error) {
+	return decodeCalDAVCredentials(accessToken)
+}
+
 func decodeCalDAVCredentials(accessToken string) (email, password string, err error) {
 	raw, err := base64.StdEncoding.DecodeString(accessToken)
 	if err != nil {

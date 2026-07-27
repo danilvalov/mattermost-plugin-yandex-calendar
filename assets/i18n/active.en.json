@@ -678,5 +678,149 @@
     {
         "id": "ycal.settings.daily.pm",
         "translation": "PM"
+    },
+    {
+        "id": "ycal.webapp.product_name",
+        "translation": "Calendar"
+    },
+    {
+        "id": "ycal.webapp.connect_title",
+        "translation": "Connect Yandex Calendar"
+    },
+    {
+        "id": "ycal.webapp.connect_body",
+        "translation": "Link your Yandex account with an app password to view and edit events here."
+    },
+    {
+        "id": "ycal.webapp.connect_button",
+        "translation": "Connect"
+    },
+    {
+        "id": "ycal.webapp.create",
+        "translation": "Create"
+    },
+    {
+        "id": "ycal.webapp.refresh",
+        "translation": "Refresh"
+    },
+    {
+        "id": "ycal.webapp.open_yandex",
+        "translation": "Open in Yandex"
+    },
+    {
+        "id": "ycal.webapp.new_event",
+        "translation": "New event"
+    },
+    {
+        "id": "ycal.webapp.save",
+        "translation": "Save"
+    },
+    {
+        "id": "ycal.webapp.close",
+        "translation": "Close"
+    },
+    {
+        "id": "ycal.webapp.delete",
+        "translation": "Delete"
+    },
+    {
+        "id": "ycal.webapp.accept",
+        "translation": "Accept"
+    },
+    {
+        "id": "ycal.webapp.decline",
+        "translation": "Decline"
+    },
+    {
+        "id": "ycal.webapp.tentative",
+        "translation": "Tentative"
+    },
+    {
+        "id": "ycal.webapp.recurring_readonly",
+        "translation": "Recurring events are read-only here. Edit in Yandex Calendar."
+    },
+    {
+        "id": "ycal.webapp.field_title",
+        "translation": "Title"
+    },
+    {
+        "id": "ycal.webapp.field_all_day",
+        "translation": "All day"
+    },
+    {
+        "id": "ycal.webapp.field_start",
+        "translation": "Start"
+    },
+    {
+        "id": "ycal.webapp.field_end",
+        "translation": "End"
+    },
+    {
+        "id": "ycal.webapp.field_end_inclusive",
+        "translation": "Inclusive last day"
+    },
+    {
+        "id": "ycal.webapp.field_location",
+        "translation": "Location"
+    },
+    {
+        "id": "ycal.webapp.field_description",
+        "translation": "Description"
+    },
+    {
+        "id": "ycal.webapp.attendees",
+        "translation": "Attendees"
+    },
+    {
+        "id": "ycal.webapp.invites",
+        "translation": "Invitations"
+    },
+    {
+        "id": "ycal.webapp.section_datetime",
+        "translation": "Date & time"
+    },
+    {
+        "id": "ycal.webapp.response_status",
+        "translation": "Your response"
+    },
+    {
+        "id": "ycal.webapp.delete_confirm",
+        "translation": "Delete this event?"
+    },
+    {
+        "id": "ycal.webapp.error_connection",
+        "translation": "Failed to check connection"
+    },
+    {
+        "id": "ycal.webapp.error_load",
+        "translation": "Failed to load events"
+    },
+    {
+        "id": "ycal.webapp.error_delete",
+        "translation": "Failed to delete event"
+    },
+    {
+        "id": "ycal.webapp.error_create",
+        "translation": "Failed to create event"
+    },
+    {
+        "id": "ycal.webapp.error_update",
+        "translation": "Failed to update event"
+    },
+    {
+        "id": "ycal.webapp.response_accepted",
+        "translation": "Accepted"
+    },
+    {
+        "id": "ycal.webapp.response_declined",
+        "translation": "Declined"
+    },
+    {
+        "id": "ycal.webapp.response_tentative",
+        "translation": "Tentative"
+    },
+    {
+        "id": "ycal.webapp.response_none",
+        "translation": "No response"
     }
 ]

@@ -52,18 +52,29 @@ func veventToRemoteEvent(parent *ical.Calendar, ve *ical.Component) (*remote.Eve
 
 	resp := &remote.EventResponseStatus{Response: remote.EventResponseStatusNotAnswered}
 
+	isRecurring := ve.Props.Get(ical.PropRecurrenceRule) != nil || ve.Props.Get("RECURRENCE-ID") != nil
+	if !isRecurring && parent != nil {
+		for _, ch := range parent.Children {
+			if ch.Name == ical.CompEvent && ch.Props.Get(ical.PropRecurrenceRule) != nil {
+				isRecurring = true
+				break
+			}
+		}
+	}
+
 	ev := &remote.Event{
-		ID:             uid,
-		ICalUID:        uid,
-		Subject:        summary,
-		Body:           &remote.ItemBody{Content: desc},
-		BodyPreview:    clip(desc, 512),
-		IsAllDay:       isAllDay,
-		ShowAs:         showAs,
-		Weblink:        strings.TrimSpace(url),
-		Start:          start,
-		End:            end,
-		Location:       locationRemote(location),
+		ID:                uid,
+		ICalUID:           uid,
+		Subject:           summary,
+		Body:              &remote.ItemBody{Content: desc},
+		BodyPreview:       clip(desc, 512),
+		IsAllDay:          isAllDay,
+		IsRecurring:       isRecurring,
+		ShowAs:            showAs,
+		Weblink:           strings.TrimSpace(url),
+		Start:             start,
+		End:               end,
+		Location:          locationRemote(location),
 		IsCancelled:    strings.EqualFold(status, "CANCELLED"),
 		IsOrganizer:    false,
 		Organizer:      org,

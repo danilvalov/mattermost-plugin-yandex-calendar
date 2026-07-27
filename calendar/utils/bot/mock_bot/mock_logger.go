@@ -7,8 +7,8 @@ package mock_bot
 import (
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	bot "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockLogger is a mock of Logger interface.

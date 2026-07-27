@@ -9,10 +9,10 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	config "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/config"
 	remote "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	bot "github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/utils/bot"
+	gomock "github.com/golang/mock/gomock"
 	oauth2 "golang.org/x/oauth2"
 )
 

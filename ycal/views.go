@@ -31,6 +31,7 @@ func (c *client) queryRemoteEvents(start, end time.Time) ([]*remote.Event, error
 	var out []*remote.Event
 	seenByInstance := map[string]int{}
 	hasOverrideByInstance := map[string]bool{}
+	pathUIDStarts := map[string]map[string]struct{}{} // path|uid -> set of start keys
 	for _, obj := range objs {
 		if obj.Data == nil {
 			continue
@@ -46,11 +47,35 @@ func (c *client) queryRemoteEvents(start, end time.Time) ([]*remote.Event, error
 			ev.ID = obj.Path
 			applyCurrentUserContext(ev, c.email)
 
+			startKey := "<empty-start>"
+			if ev.Start != nil {
+				startKey = ev.Start.Time().UTC().Format(time.RFC3339Nano)
+			}
+			pu := obj.Path + "|" + ev.ICalUID
+			if pathUIDStarts[pu] == nil {
+				pathUIDStarts[pu] = map[string]struct{}{}
+			}
+			pathUIDStarts[pu][startKey] = struct{}{}
+			if len(pathUIDStarts[pu]) > 1 {
+				ev.IsRecurring = true
+			}
+
 			key := recurrenceInstanceKey(obj.Data, comp, ev)
 			hasRecurrenceOverride := comp.Props.Get("RECURRENCE-ID") != nil
 			out, seenByInstance, hasOverrideByInstance = appendWithRecurrenceDedup(
 				out, seenByInstance, hasOverrideByInstance, key, hasRecurrenceOverride, ev,
 			)
+		}
+	}
+
+	// Second pass: if any path|uid had multiple starts, mark all matching events recurring.
+	for _, ev := range out {
+		if ev == nil {
+			continue
+		}
+		pu := ev.ID + "|" + ev.ICalUID
+		if len(pathUIDStarts[pu]) > 1 {
+			ev.IsRecurring = true
 		}
 	}
 

@@ -678,5 +678,149 @@
     {
         "id": "ycal.settings.daily.pm",
         "translation": "PM"
+    },
+    {
+        "id": "ycal.webapp.product_name",
+        "translation": "Календарь"
+    },
+    {
+        "id": "ycal.webapp.connect_title",
+        "translation": "Подключить Яндекс.Календарь"
+    },
+    {
+        "id": "ycal.webapp.connect_body",
+        "translation": "Привяжите аккаунт Яндекса с паролем приложения, чтобы просматривать и редактировать события здесь."
+    },
+    {
+        "id": "ycal.webapp.connect_button",
+        "translation": "Подключить"
+    },
+    {
+        "id": "ycal.webapp.create",
+        "translation": "Создать"
+    },
+    {
+        "id": "ycal.webapp.refresh",
+        "translation": "Обновить"
+    },
+    {
+        "id": "ycal.webapp.open_yandex",
+        "translation": "Открыть в Яндексе"
+    },
+    {
+        "id": "ycal.webapp.new_event",
+        "translation": "Новое событие"
+    },
+    {
+        "id": "ycal.webapp.save",
+        "translation": "Сохранить"
+    },
+    {
+        "id": "ycal.webapp.close",
+        "translation": "Закрыть"
+    },
+    {
+        "id": "ycal.webapp.delete",
+        "translation": "Удалить"
+    },
+    {
+        "id": "ycal.webapp.accept",
+        "translation": "Принять"
+    },
+    {
+        "id": "ycal.webapp.decline",
+        "translation": "Отклонить"
+    },
+    {
+        "id": "ycal.webapp.tentative",
+        "translation": "Под вопросом"
+    },
+    {
+        "id": "ycal.webapp.recurring_readonly",
+        "translation": "Повторяющиеся события здесь только для просмотра. Редактируйте в Яндекс.Календаре."
+    },
+    {
+        "id": "ycal.webapp.field_title",
+        "translation": "Название"
+    },
+    {
+        "id": "ycal.webapp.field_all_day",
+        "translation": "Весь день"
+    },
+    {
+        "id": "ycal.webapp.field_start",
+        "translation": "Начало"
+    },
+    {
+        "id": "ycal.webapp.field_end",
+        "translation": "Конец"
+    },
+    {
+        "id": "ycal.webapp.field_end_inclusive",
+        "translation": "Последний день включительно"
+    },
+    {
+        "id": "ycal.webapp.field_location",
+        "translation": "Место"
+    },
+    {
+        "id": "ycal.webapp.field_description",
+        "translation": "Описание"
+    },
+    {
+        "id": "ycal.webapp.attendees",
+        "translation": "Участники"
+    },
+    {
+        "id": "ycal.webapp.invites",
+        "translation": "Приглашения"
+    },
+    {
+        "id": "ycal.webapp.section_datetime",
+        "translation": "Дата и время"
+    },
+    {
+        "id": "ycal.webapp.response_status",
+        "translation": "Ваш ответ"
+    },
+    {
+        "id": "ycal.webapp.delete_confirm",
+        "translation": "Удалить это событие?"
+    },
+    {
+        "id": "ycal.webapp.error_connection",
+        "translation": "Не удалось проверить подключение"
+    },
+    {
+        "id": "ycal.webapp.error_load",
+        "translation": "Не удалось загрузить события"
+    },
+    {
+        "id": "ycal.webapp.error_delete",
+        "translation": "Не удалось удалить событие"
+    },
+    {
+        "id": "ycal.webapp.error_create",
+        "translation": "Не удалось создать событие"
+    },
+    {
+        "id": "ycal.webapp.error_update",
+        "translation": "Не удалось обновить событие"
+    },
+    {
+        "id": "ycal.webapp.response_accepted",
+        "translation": "Принято"
+    },
+    {
+        "id": "ycal.webapp.response_declined",
+        "translation": "Отклонено"
+    },
+    {
+        "id": "ycal.webapp.response_tentative",
+        "translation": "Под вопросом"
+    },
+    {
+        "id": "ycal.webapp.response_none",
+        "translation": "Без ответа"
     }
 ]

@@ -9,14 +9,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"github.com/mattermost/mattermost/server/public/model"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/remote"
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/store"
 )
 
 func TestConnectedUserHandler(t *testing.T) {
-	api, mockStore, _, _, _, mockLogger, mockLoggerWith, _ := GetMockSetup(t)
+	api, mockStore, _, _, mockPluginAPI, _, _, _ := GetMockSetup(t)
 
 	tests := []struct {
 		name       string
@@ -26,7 +27,6 @@ func TestConnectedUserHandler(t *testing.T) {
 		{
 			name: "Missing MattermostUserId in header",
 			setup: func(req *http.Request) {
-				mockLogger.EXPECT().Errorf("connectedUserHandler, unauthorized user").Times(1)
 			},
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusUnauthorized, rec.Result().StatusCode)
@@ -37,8 +37,6 @@ func TestConnectedUserHandler(t *testing.T) {
 			setup: func(req *http.Request) {
 				req.Header.Set(MMUserIDHeader, MockUserID)
 				mockStore.EXPECT().LoadUser(MockUserID).Return(nil, errors.New("store error")).Times(1)
-				mockLogger.EXPECT().With(gomock.Any()).Return(mockLoggerWith).Times(1)
-				mockLoggerWith.EXPECT().Errorf("connectedUserHandler, error occurred while loading user from store").Times(1)
 			},
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusInternalServerError, rec.Result().StatusCode)
@@ -49,8 +47,6 @@ func TestConnectedUserHandler(t *testing.T) {
 			setup: func(req *http.Request) {
 				req.Header.Set(MMUserIDHeader, MockUserID)
 				mockStore.EXPECT().LoadUser(MockUserID).Return(nil, store.ErrNotFound).Times(1)
-				mockLogger.EXPECT().With(gomock.Any()).Return(mockLoggerWith).Times(1)
-				mockLoggerWith.EXPECT().Errorf("connectedUserHandler, user not found in store").Times(1)
 			},
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusUnauthorized, rec.Result().StatusCode)
@@ -60,11 +56,20 @@ func TestConnectedUserHandler(t *testing.T) {
 			name: "User successfully connected",
 			setup: func(req *http.Request) {
 				req.Header.Set(MMUserIDHeader, MockUserID)
-				mockStore.EXPECT().LoadUser(MockUserID).Return(&store.User{}, nil).Times(1)
+				mockStore.EXPECT().LoadUser(MockUserID).Return(&store.User{
+					MattermostUserID: MockUserID,
+					Remote:           &remote.User{Mail: "user@example.com"},
+				}, nil).Times(1)
+				mockPluginAPI.EXPECT().GetMattermostUser(MockUserID).Return(&model.User{
+					Timezone: map[string]string{
+						"useAutomaticTimezone": "false",
+						"manualTimezone":       "Europe/Moscow",
+					},
+				}, nil).Times(1)
 			},
 			assertions: func(t *testing.T, rec *httptest.ResponseRecorder) {
 				assert.Equal(t, http.StatusOK, rec.Result().StatusCode)
-				assert.JSONEq(t, `{"is_connected": true}`, rec.Body.String())
+				assert.JSONEq(t, `{"is_connected":true,"email":"user@example.com","timezone":"Europe/Moscow"}`, rec.Body.String())
 			},
 		},
 	}
