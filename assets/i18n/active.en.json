@@ -772,6 +772,14 @@
         "translation": "Description"
     },
     {
+        "id": "ycal.webapp.field_telemost",
+        "translation": "Telemost"
+    },
+    {
+        "id": "ycal.webapp.field_telemost_connect",
+        "translation": "Connect Telemost"
+    },
+    {
         "id": "ycal.webapp.attendees",
         "translation": "Attendees"
     },

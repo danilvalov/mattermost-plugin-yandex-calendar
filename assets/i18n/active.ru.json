@@ -772,6 +772,14 @@
         "translation": "Описание"
     },
     {
+        "id": "ycal.webapp.field_telemost",
+        "translation": "Телемост"
+    },
+    {
+        "id": "ycal.webapp.field_telemost_connect",
+        "translation": "Подключить Телемост"
+    },
+    {
         "id": "ycal.webapp.attendees",
         "translation": "Участники"
     },

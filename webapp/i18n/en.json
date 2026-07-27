@@ -22,6 +22,7 @@
   "ycal.webapp.field_location": "Location",
   "ycal.webapp.field_description": "Description",
   "ycal.webapp.field_telemost": "Telemost",
+  "ycal.webapp.field_telemost_connect": "Connect Telemost",
   "ycal.webapp.attendees": "Attendees",
   "ycal.webapp.attendees_search": "Search users or enter email",
   "ycal.webapp.attendees_search_hint": "Pick a Mattermost user or type a valid email and press Enter",

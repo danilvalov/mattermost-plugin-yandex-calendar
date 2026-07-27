@@ -77,6 +77,9 @@ func (c *client) CreateEvent(in *remote.Event) (*remote.Event, error) {
 	if out != nil && out.ICalUID == "" {
 		out.ICalUID = uid
 	}
+	if err := assertTelemostApplied(in, out); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 
@@ -111,6 +114,9 @@ func (c *client) UpdateEvent(in *remote.Event) (*remote.Event, error) {
 		return nil, err
 	}
 	if err := assertEventUpdateApplied(in, out); err != nil {
+		return nil, err
+	}
+	if err := assertTelemostApplied(in, out); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -206,6 +212,12 @@ func patchVEVENTFromRemote(cal *ical.Calendar, ve *ical.Component, in *remote.Ev
 
 	if in.RewriteAttendees {
 		rewriteAttendees(ve, in.Attendees)
+	}
+
+	// Drop stale mint hint so later PUTs don't keep requesting a room; set only when needed.
+	ve.Props.Del("X-TELEMOST-REQUIRED")
+	if in.RequireTelemost && propText(ve, "X-TELEMOST-CONFERENCE", "X-YANDEX-TELEMOST-URL") == "" {
+		ve.Props.SetText("X-TELEMOST-REQUIRED", "TRUE")
 	}
 
 	return nil
@@ -364,6 +376,16 @@ func assertEventUpdateApplied(want, got *remote.Event) error {
 		}
 	}
 	return nil
+}
+
+func assertTelemostApplied(want, got *remote.Event) error {
+	if want == nil || !want.RequireTelemost {
+		return nil
+	}
+	if got != nil && got.Conference != nil && strings.TrimSpace(got.Conference.URL) != "" {
+		return nil
+	}
+	return errors.New("yandex did not attach a Telemost conference")
 }
 
 func attendeeEmailSet(attendees []*remote.Attendee) map[string]struct{} {

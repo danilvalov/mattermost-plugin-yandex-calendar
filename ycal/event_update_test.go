@@ -284,6 +284,116 @@ func TestBuildCalendarFromRemoteEvent_AllDayExclusive(t *testing.T) {
 	}
 }
 
+func TestBuildCalendarFromRemoteEvent_RequireTelemost(t *testing.T) {
+	t.Parallel()
+	in := &remote.Event{
+		Subject:         "Meet",
+		RequireTelemost: true,
+		Start:           remote.NewDateTime(time.Date(2026, 7, 28, 10, 0, 0, 0, time.UTC), "UTC"),
+		End:             remote.NewDateTime(time.Date(2026, 7, 28, 11, 0, 0, 0, time.UTC), "UTC"),
+	}
+	cal, err := buildCalendarFromRemoteEvent(in, "uid-telemost", "a@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ve := firstVEVENT(cal)
+	if got := propText(ve, "X-TELEMOST-REQUIRED"); got != "TRUE" {
+		t.Fatalf("X-TELEMOST-REQUIRED: %q", got)
+	}
+}
+
+func TestPatchVEVENTFromRemote_RequireTelemost(t *testing.T) {
+	t.Parallel()
+
+	cal, ve := mustDecodeVEVENT(t, `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:patch-telemost@example.com
+DTSTART:20260728T100000Z
+DTEND:20260728T110000Z
+SUMMARY:No conf
+X-TELEMOST-REQUIRED:TRUE
+END:VEVENT
+END:VCALENDAR`)
+
+	in := &remote.Event{
+		Subject:         "No conf",
+		RequireTelemost: true,
+		Start:           remote.NewDateTime(time.Date(2026, 7, 28, 10, 0, 0, 0, time.UTC), "UTC"),
+		End:             remote.NewDateTime(time.Date(2026, 7, 28, 11, 0, 0, 0, time.UTC), "UTC"),
+	}
+	if err := patchVEVENTFromRemote(cal, ve, in); err != nil {
+		t.Fatal(err)
+	}
+	if got := propText(ve, "X-TELEMOST-REQUIRED"); got != "TRUE" {
+		t.Fatalf("X-TELEMOST-REQUIRED: %q", got)
+	}
+
+	// Already has conference — clear stale mint hint, do not re-request.
+	cal2, ve2 := mustDecodeVEVENT(t, `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:patch-telemost-existing@example.com
+DTSTART:20260728T100000Z
+DTEND:20260728T110000Z
+SUMMARY:Has conf
+X-TELEMOST-REQUIRED:TRUE
+X-TELEMOST-CONFERENCE:https://telemost.yandex.ru/j/1
+END:VEVENT
+END:VCALENDAR`)
+	in2 := &remote.Event{
+		Subject:         "Has conf",
+		RequireTelemost: true,
+		Start:           remote.NewDateTime(time.Date(2026, 7, 28, 10, 0, 0, 0, time.UTC), "UTC"),
+		End:             remote.NewDateTime(time.Date(2026, 7, 28, 11, 0, 0, 0, time.UTC), "UTC"),
+	}
+	if err := patchVEVENTFromRemote(cal2, ve2, in2); err != nil {
+		t.Fatal(err)
+	}
+	if got := propText(ve2, "X-TELEMOST-REQUIRED"); got != "" {
+		t.Fatalf("expected no X-TELEMOST-REQUIRED when conference exists, got %q", got)
+	}
+
+	// Ordinary edit clears a leftover mint hint.
+	cal3, ve3 := mustDecodeVEVENT(t, `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:patch-telemost-clear@example.com
+DTSTART:20260728T100000Z
+DTEND:20260728T110000Z
+SUMMARY:Clear
+X-TELEMOST-REQUIRED:TRUE
+END:VEVENT
+END:VCALENDAR`)
+	in3 := &remote.Event{
+		Subject: "Clear",
+		Start:   remote.NewDateTime(time.Date(2026, 7, 28, 10, 0, 0, 0, time.UTC), "UTC"),
+		End:     remote.NewDateTime(time.Date(2026, 7, 28, 11, 0, 0, 0, time.UTC), "UTC"),
+	}
+	if err := patchVEVENTFromRemote(cal3, ve3, in3); err != nil {
+		t.Fatal(err)
+	}
+	if got := propText(ve3, "X-TELEMOST-REQUIRED"); got != "" {
+		t.Fatalf("expected leftover X-TELEMOST-REQUIRED cleared, got %q", got)
+	}
+}
+
+func TestAssertTelemostApplied(t *testing.T) {
+	t.Parallel()
+	if err := assertTelemostApplied(&remote.Event{RequireTelemost: true}, &remote.Event{}); err == nil {
+		t.Fatal("expected missing conference error")
+	}
+	if err := assertTelemostApplied(
+		&remote.Event{RequireTelemost: true},
+		&remote.Event{Conference: &remote.Conference{URL: "https://telemost.yandex.ru/j/1"}},
+	); err != nil {
+		t.Fatal(err)
+	}
+	if err := assertTelemostApplied(&remote.Event{}, &remote.Event{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func mustDecodeVEVENT(t *testing.T, raw string) (*ical.Calendar, *ical.Component) {
 	t.Helper()
 	cal, err := ical.NewDecoder(strings.NewReader(raw)).Decode()

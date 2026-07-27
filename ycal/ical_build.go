@@ -82,6 +82,10 @@ func buildCalendarFromRemoteEvent(in *remote.Event, uid, organizerEmail string) 
 		ve.Props.SetText(ical.PropTransparency, "OPAQUE")
 	}
 
+	if in.RequireTelemost {
+		ve.Props.SetText("X-TELEMOST-REQUIRED", "TRUE")
+	}
+
 	orgMail := organizerEmail
 	if in.Organizer != nil && in.Organizer.EmailAddress != nil && in.Organizer.EmailAddress.Address != "" {
 		orgMail = in.Organizer.EmailAddress.Address

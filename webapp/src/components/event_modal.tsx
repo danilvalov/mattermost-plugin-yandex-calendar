@@ -122,6 +122,7 @@ const EventModal: React.FC<Props> = ({
     const [location, setLocation] = useState('');
     const [description, setDescription] = useState('');
     const [attendees, setAttendees] = useState<AttendeeDraft[]>([]);
+    const [connectTelemost, setConnectTelemost] = useState(false);
     const [searchInput, setSearchInput] = useState('');
     const [options, setOptions] = useState<MMUserHit[]>([]);
     const [searching, setSearching] = useState(false);
@@ -143,6 +144,7 @@ const EventModal: React.FC<Props> = ({
             setLocation('');
             setDescription('');
             setAttendees([]);
+            setConnectTelemost(false);
             return;
         }
         if (!event) {
@@ -164,6 +166,7 @@ const EventModal: React.FC<Props> = ({
             name: a.name,
             status: a.status,
         })));
+        setConnectTelemost(false);
     }, [open, mode, event, createDefaults]);
 
     useEffect(() => {
@@ -243,6 +246,7 @@ const EventModal: React.FC<Props> = ({
                         description: description || undefined,
                         location: location || undefined,
                         attendees: emails,
+                        ...(connectTelemost ? {telemost: true} : {}),
                     }
                     : {
                         subject: subject.trim() || t('ycal.webapp.new_event'),
@@ -252,6 +256,7 @@ const EventModal: React.FC<Props> = ({
                         description: description || undefined,
                         location: location || undefined,
                         attendees: emails,
+                        ...(connectTelemost ? {telemost: true} : {}),
                     };
                 const created = await apiCreateEvent(payload);
                 onSaved(created);
@@ -266,6 +271,7 @@ const EventModal: React.FC<Props> = ({
             const nextEmails = [...emails].map((e) => e.toLowerCase()).sort();
             const attendeesChanged = origEmails.length !== nextEmails.length ||
                 origEmails.some((e, i) => e !== nextEmails[i]);
+            const wantTelemost = connectTelemost && !event.conference_url;
             const updated = await patchEvent({
                 id: event.id,
                 subject: subject.trim() || event.subject,
@@ -275,6 +281,7 @@ const EventModal: React.FC<Props> = ({
                 description,
                 location,
                 ...(attendeesChanged ? {attendees: emails} : {}),
+                ...(wantTelemost ? {telemost: true} : {}),
             });
             onSaved(updated);
             onClose();
@@ -283,7 +290,7 @@ const EventModal: React.FC<Props> = ({
         } finally {
             setBusy(false);
         }
-    }, [allDay, attendees, canEditFields, description, end, event, location, mode, onClose, onSaved, start, subject, t]);
+    }, [allDay, attendees, canEditFields, connectTelemost, description, end, event, location, mode, onClose, onSaved, start, subject, t]);
 
     const onDelete = useCallback(async () => {
         if (!event?.editable) {
@@ -379,19 +386,38 @@ const EventModal: React.FC<Props> = ({
                         disabled={!canEditFields}
                         fullWidth
                     />
-                    {mode !== 'create' && event?.conference_url && (
-                        <Stack spacing={0.5}>
-                            <Typography variant='subtitle2'>{t('ycal.webapp.field_telemost')}</Typography>
-                            <Link
-                                href={event.conference_url}
-                                target='_blank'
-                                rel='noopener noreferrer'
-                                underline='hover'
-                                sx={{wordBreak: 'break-all'}}
+                    {(canEditFields || Boolean(event?.conference_url)) && (
+                        <Box>
+                            <Typography
+                                variant='caption'
+                                color='text.secondary'
+                                sx={{display: 'block', mb: 0.75, ml: 0.25}}
                             >
-                                {event.conference_url}
-                            </Link>
-                        </Stack>
+                                {t('ycal.webapp.field_telemost')}
+                            </Typography>
+                            {event?.conference_url ? (
+                                <Link
+                                    href={event.conference_url}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    underline='hover'
+                                    sx={{wordBreak: 'break-all'}}
+                                >
+                                    {event.conference_url}
+                                </Link>
+                            ) : (
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            checked={connectTelemost}
+                                            onChange={(_, v) => setConnectTelemost(v)}
+                                            disabled={!canEditFields}
+                                        />
+                                    }
+                                    label={t('ycal.webapp.field_telemost_connect')}
+                                />
+                            )}
+                        </Box>
                     )}
                     {canEditFields ? (
                         <TextField
@@ -560,15 +586,17 @@ const EventModal: React.FC<Props> = ({
                     )}
                 </Stack>
             </DialogContent>
-            <DialogActions sx={{px: 3, py: 2, justifyContent: 'space-between'}}>
-                <Button
-                    href={yandexCalendarURL(event)}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    color='inherit'
-                >
-                    {t('ycal.webapp.open_yandex')}
-                </Button>
+            <DialogActions sx={{px: 3, py: 2, justifyContent: mode === 'create' ? 'flex-end' : 'space-between'}}>
+                {mode !== 'create' && (
+                    <Button
+                        href={yandexCalendarURL(event)}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        color='inherit'
+                    >
+                        {t('ycal.webapp.open_yandex')}
+                    </Button>
+                )}
                 <Stack direction='row' spacing={1}>
                     {event?.editable && mode !== 'create' && (
                         <Button color='error' disabled={busy} onClick={onDelete}>{t('ycal.webapp.delete')}</Button>

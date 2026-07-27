@@ -119,6 +119,7 @@ export function createEvent(payload: {
     description?: string;
     location?: string;
     attendees?: string[];
+    telemost?: boolean;
 }): Promise<CalendarEventDTO> {
     return pluginFetch('/api/v1/events/create', {
         method: 'POST',
@@ -135,6 +136,7 @@ export function patchEvent(payload: {
     description?: string;
     location?: string;
     attendees?: string[];
+    telemost?: boolean;
 }): Promise<CalendarEventDTO> {
     return pluginFetch('/api/v1/events', {
         method: 'PATCH',

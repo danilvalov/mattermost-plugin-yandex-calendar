@@ -39,6 +39,8 @@ type createEventPayload struct {
 	Subject     string `json:"subject"`
 	Location    string `json:"location,omitempty"`
 	ChannelID   string `json:"channel_id"`
+	// Telemost asks Yandex CalDAV to attach a Telemost conference (X-TELEMOST-REQUIRED).
+	Telemost bool `json:"telemost,omitempty"`
 }
 
 func (cep createEventPayload) isISO() bool {
@@ -50,6 +52,7 @@ func (cep createEventPayload) ToRemoteEvent(loc *time.Location) (*remote.Event, 
 
 	evt.IsAllDay = cep.AllDay
 	evt.Subject = cep.Subject
+	evt.RequireTelemost = cep.Telemost
 	if cep.Description != "" {
 		evt.Body = &remote.ItemBody{
 			Content:     cep.Description,

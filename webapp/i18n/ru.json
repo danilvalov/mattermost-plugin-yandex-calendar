@@ -22,6 +22,7 @@
   "ycal.webapp.field_location": "Место",
   "ycal.webapp.field_description": "Описание",
   "ycal.webapp.field_telemost": "Телемост",
+  "ycal.webapp.field_telemost_connect": "Подключить Телемост",
   "ycal.webapp.attendees": "Участники",
   "ycal.webapp.attendees_search": "Поиск пользователей или email",
   "ycal.webapp.attendees_search_hint": "Выберите пользователя Mattermost или введите email и нажмите Enter",

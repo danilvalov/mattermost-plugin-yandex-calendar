@@ -85,6 +85,8 @@ type patchEventPayload struct {
 	Description *string   `json:"description,omitempty"`
 	Location    *string   `json:"location,omitempty"`
 	Attendees   *[]string `json:"attendees,omitempty"`
+	// Telemost asks Yandex to attach a conference when the event has none yet.
+	Telemost *bool `json:"telemost,omitempty"`
 }
 
 func (api *api) patchEvent(w http.ResponseWriter, r *http.Request) {
@@ -195,6 +197,9 @@ func (api *api) patchEvent(w http.ResponseWriter, r *http.Request) {
 		}
 		updated.Attendees = atts
 		updated.RewriteAttendees = true
+	}
+	if payload.Telemost != nil && *payload.Telemost {
+		updated.RequireTelemost = true
 	}
 
 	out, err := eng.UpdateEvent(engine.NewUser(user.MattermostUserID), &updated)

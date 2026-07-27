@@ -34,6 +34,8 @@ type Event struct {
 	ResponseRequested          bool                 `json:"responseRequested,omitempty"`
 	// RewriteAttendees tells CalDAV UpdateEvent to replace ATTENDEE props (nil/false = leave as-is).
 	RewriteAttendees bool `json:"-"`
+	// RequireTelemost asks Yandex to mint a Telemost room (X-TELEMOST-REQUIRED:TRUE).
+	RequireTelemost bool `json:"-"`
 }
 
 // Editable reports whether the calendar UI may offer content mutation.

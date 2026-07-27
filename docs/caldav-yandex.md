@@ -52,7 +52,8 @@ These appear in secondary write-ups; **not seen** on the attendee CalDAV object 
 
 | Property | Values | Meaning |
 | --- | --- | --- |
-| `X-TELEMOST-CONFERENCE` | `https://telemost.360.yandex.ru/j/…` | Direct Telemost room URL (also often duplicated in `DESCRIPTION`). |
+| `X-TELEMOST-REQUIRED` | `TRUE` | Client write hint on create/update: Yandex mints a Telemost room. After processing, the object gains `X-TELEMOST-CONFERENCE` and a link line in `DESCRIPTION` (verified 2026-07 via CalDAV `PUT`). |
+| `X-TELEMOST-CONFERENCE` | `https://telemost…/j/…` | Direct Telemost room URL (also often duplicated in `DESCRIPTION`). |
 
 See also: [Creating an event](https://yandex.ru/support/yandex-360/customers/calendar/web/ru/plan-events/events/event-create).
 
