@@ -218,18 +218,22 @@ func (m *mscalendar) DisconnectUser(mattermostUserID string) error {
 	eventSubscriptionID := storedUser.Settings.EventSubscriptionID
 	if eventSubscriptionID != "" {
 		sub, errLoad := m.Store.LoadSubscription(eventSubscriptionID)
-		if errLoad != nil {
+		switch {
+		case errLoad == nil:
+			err = m.Store.DeleteUserSubscription(storedUser, eventSubscriptionID)
+			if err != nil && err != store.ErrNotFound {
+				return errors.WithMessagef(err, "failed to delete subscription %s", eventSubscriptionID)
+			}
+
+			err = m.client.DeleteSubscription(sub.Remote)
+			if err != nil {
+				m.Logger.Warnf("failed to delete remote subscription %s. err=%v", eventSubscriptionID, err)
+			}
+		case errLoad == store.ErrNotFound:
+			// Stale EventSubscriptionID — still disconnect the user.
+			m.Logger.Warnf("subscription %s missing during disconnect for %s, continuing", eventSubscriptionID, mattermostUserID)
+		default:
 			return errors.Wrap(errLoad, "error loading subscription")
-		}
-
-		err = m.Store.DeleteUserSubscription(storedUser, eventSubscriptionID)
-		if err != nil && err != store.ErrNotFound {
-			return errors.WithMessagef(err, "failed to delete subscription %s", eventSubscriptionID)
-		}
-
-		err = m.client.DeleteSubscription(sub.Remote)
-		if err != nil {
-			m.Logger.Warnf("failed to delete remote subscription %s. err=%v", eventSubscriptionID, err)
 		}
 	}
 

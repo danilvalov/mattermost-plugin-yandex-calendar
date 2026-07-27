@@ -68,6 +68,10 @@
         "translation": "Аккаунт успешно отключён."
     },
     {
+        "id": "ycal.disconnect.auth_failed",
+        "translation": "Аккаунт {{.DisplayName}} отключён: аутентификация не удалась (возможно, пароль приложения отозван). Выполните `/{{.Trigger}} connect`, чтобы подключиться снова."
+    },
+    {
         "id": "ycal.subscribe.already",
         "translation": "Вы уже подписаны на события."
     },

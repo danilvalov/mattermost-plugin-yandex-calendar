@@ -23,6 +23,9 @@ func (m *mscalendar) PrintSettings(userID string) {
 }
 
 func (m *mscalendar) ClearSettingsPosts(userID string) {
+	if m.SettingsPanel == nil {
+		return
+	}
 	err := m.SettingsPanel.Clear(userID)
 	if err != nil {
 		m.Logger.Warnf("Error clearing settings posts. err=%v", err)

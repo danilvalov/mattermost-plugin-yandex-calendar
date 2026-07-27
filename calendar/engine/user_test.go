@@ -400,6 +400,22 @@ func TestDisconnectUser(t *testing.T) {
 			},
 		},
 		{
+			name: "subscription missing during disconnect continues",
+			setupMock: func() {
+				mscalendar.client = mockClient
+				mscalendar.actingUser = &User{MattermostUserID: MockRemoteUserID}
+				mockWelcomer.EXPECT().AfterDisconnect(MockMMUserID).Return(nil).Times(1)
+				mockStore.EXPECT().LoadUser(MockMMUserID).Return(&store.User{Settings: store.Settings{EventSubscriptionID: MockEventSubscriptionID}}, nil).Times(1)
+				mockStore.EXPECT().LoadSubscription(MockEventSubscriptionID).Return(nil, store.ErrNotFound).Times(1)
+				mockLogger.EXPECT().Warnf(gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+				mockStore.EXPECT().DeleteUser(MockMMUserID).Return(nil).Times(1)
+				mockStore.EXPECT().DeleteUserFromIndex(MockMMUserID).Return(nil).Times(1)
+			},
+			assertions: func(err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
 			name: "failed to delete event subscription",
 			setupMock: func() {
 				mscalendar.client = mockClient

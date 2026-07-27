@@ -68,6 +68,10 @@
         "translation": "Successfully disconnected your account"
     },
     {
+        "id": "ycal.disconnect.auth_failed",
+        "translation": "Your {{.DisplayName}} account was disconnected because authentication failed (the app password may have been revoked). Run `/{{.Trigger}} connect` to reconnect."
+    },
+    {
         "id": "ycal.subscribe.already",
         "translation": "You are already subscribed to events."
     },
