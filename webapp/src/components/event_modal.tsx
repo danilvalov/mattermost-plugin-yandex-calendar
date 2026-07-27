@@ -68,6 +68,32 @@ function fromDateTimeLocalValue(v: string): string {
     return v;
 }
 
+function todayDateOnly(): string {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** YYYY-MM-DD from date or datetime-local value; empty if unusable. */
+function datePart(v: string): string {
+    if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
+        return v.slice(0, 10);
+    }
+    return '';
+}
+
+function defaultTimedRangeOnDates(startDate: string, endDate: string): {start: string; end: string} {
+    const base = new Date();
+    base.setMinutes(0, 0, 0);
+    base.setHours(base.getHours() + 1);
+    const start = `${startDate}T${pad(base.getHours())}:${pad(base.getMinutes())}`;
+    const endBase = new Date(base);
+    endBase.setHours(endBase.getHours() + 1);
+    if (endDate > startDate) {
+        return {start, end: `${endDate}T${pad(base.getHours())}:${pad(base.getMinutes())}`};
+    }
+    return {start, end: `${startDate}T${pad(endBase.getHours())}:${pad(endBase.getMinutes())}`};
+}
+
 function defaultCreateTimes(): {start: string; end: string; all_day: boolean} {
     const start = new Date();
     start.setMinutes(0, 0, 0);
@@ -353,7 +379,24 @@ const EventModal: React.FC<Props> = ({
                         control={
                             <Switch
                                 checked={allDay}
-                                onChange={(_, v) => setAllDay(v)}
+                                onChange={(_, v) => {
+                                    setAllDay(v);
+                                    if (v) {
+                                        const s = datePart(start) || todayDateOnly();
+                                        let e = datePart(end) || s;
+                                        if (e < s) {
+                                            e = s;
+                                        }
+                                        setStart(s);
+                                        setEnd(e);
+                                        return;
+                                    }
+                                    const s = datePart(start) || todayDateOnly();
+                                    const e = datePart(end) || s;
+                                    const timed = defaultTimedRangeOnDates(s, e < s ? s : e);
+                                    setStart(timed.start);
+                                    setEnd(timed.end);
+                                }}
                                 disabled={!canEditFields}
                             />
                         }
@@ -406,16 +449,28 @@ const EventModal: React.FC<Props> = ({
                                     {event.conference_url}
                                 </Link>
                             ) : (
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={connectTelemost}
-                                            onChange={(_, v) => setConnectTelemost(v)}
-                                            disabled={!canEditFields}
-                                        />
-                                    }
-                                    label={t('ycal.webapp.field_telemost_connect')}
-                                />
+                                <Stack direction='row' alignItems='center' spacing={1} sx={{minHeight: 32}}>
+                                    <Switch
+                                        checked={connectTelemost}
+                                        onChange={(_, v) => setConnectTelemost(v)}
+                                        disabled={!canEditFields}
+                                        size='small'
+                                        edge='start'
+                                        inputProps={{'aria-label': t('ycal.webapp.field_telemost_connect')}}
+                                    />
+                                    <Typography
+                                        component='label'
+                                        variant='body1'
+                                        onClick={() => canEditFields && setConnectTelemost((v) => !v)}
+                                        sx={{
+                                            cursor: canEditFields ? 'pointer' : 'default',
+                                            userSelect: 'none',
+                                            lineHeight: 1.25,
+                                        }}
+                                    >
+                                        {t('ycal.webapp.field_telemost_connect')}
+                                    </Typography>
+                                </Stack>
                             )}
                         </Box>
                     )}
