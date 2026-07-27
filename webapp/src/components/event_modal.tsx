@@ -462,7 +462,13 @@ const EventModal: React.FC<Props> = ({
                         </Box>
                     )}
 
-                    <Typography variant='subtitle2'>{t('ycal.webapp.attendees')}</Typography>
+                    <Typography
+                        variant='caption'
+                        color='text.secondary'
+                        sx={{display: 'block', mb: 0.75, ml: 0.25}}
+                    >
+                        {t('ycal.webapp.attendees')}
+                    </Typography>
                     <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap'>
                         {attendees.length === 0 && (
                             <Typography variant='body2' color='text.secondary'>{t('ycal.webapp.attendees_empty')}</Typography>
