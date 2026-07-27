@@ -31,6 +31,7 @@ type calendarEventDTO struct {
 	ResponseRequested  bool                 `json:"response_requested"`
 	ResponseStatus     string               `json:"response_status,omitempty"`
 	Weblink            string               `json:"weblink,omitempty"`
+	ConferenceURL      string               `json:"conference_url,omitempty"`
 	Attendees          []calendarAttendeeDTO `json:"attendees,omitempty"`
 }
 
@@ -55,6 +56,9 @@ func eventToDTO(ev *remote.Event) calendarEventDTO {
 		IsCancelled:       ev.IsCancelled,
 		ResponseRequested: ev.ResponseRequested,
 		Weblink:           ev.Weblink,
+	}
+	if ev.Conference != nil {
+		dto.ConferenceURL = ev.Conference.URL
 	}
 	if ev.Body != nil {
 		dto.Description = ev.Body.Content

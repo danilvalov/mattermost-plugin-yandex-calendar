@@ -19,6 +19,7 @@ export type CalendarEventDTO = {
     response_requested: boolean;
     response_status?: string;
     weblink?: string;
+    conference_url?: string;
     attendees?: Array<{name?: string; email: string; status?: string}>;
 };
 
@@ -26,6 +27,17 @@ export type MeResponse = {
     is_connected: boolean;
     email?: string;
     timezone?: string;
+};
+
+export type PublicConfig = {
+    enable_calendar_ui: boolean;
+};
+
+export type MMUserHit = {
+    id: string;
+    username: string;
+    display_name: string;
+    email: string;
 };
 
 export function getPluginServerRoute(): string {
@@ -79,6 +91,11 @@ export function fetchMe(): Promise<MeResponse> {
     return pluginFetch('/api/v1/me');
 }
 
+/** Public plugin flags for the webapp (no CalDAV connection required). */
+export function fetchPublicConfig(): Promise<PublicConfig> {
+    return pluginFetch('/api/v1/config');
+}
+
 export function fetchEvents(from: string, to: string): Promise<CalendarEventDTO[]> {
     const q = new URLSearchParams({from, to});
     return pluginFetch(`/api/v1/events?${q.toString()}`);
@@ -89,6 +106,11 @@ export function fetchEvent(id: string): Promise<CalendarEventDTO> {
     return pluginFetch(`/api/v1/events/get?${q.toString()}`);
 }
 
+export function searchMMUsers(q: string): Promise<MMUserHit[]> {
+    const params = new URLSearchParams({q});
+    return pluginFetch(`/api/v1/users/search?${params.toString()}`);
+}
+
 export function createEvent(payload: {
     subject: string;
     start: string;
@@ -96,6 +118,7 @@ export function createEvent(payload: {
     all_day: boolean;
     description?: string;
     location?: string;
+    attendees?: string[];
 }): Promise<CalendarEventDTO> {
     return pluginFetch('/api/v1/events/create', {
         method: 'POST',
@@ -111,6 +134,7 @@ export function patchEvent(payload: {
     all_day?: boolean;
     description?: string;
     location?: string;
+    attendees?: string[];
 }): Promise<CalendarEventDTO> {
     return pluginFetch('/api/v1/events', {
         method: 'PATCH',
@@ -123,9 +147,16 @@ export function deleteEvent(id: string): Promise<void> {
     return pluginFetch(`/api/v1/events?${q.toString()}`, {method: 'DELETE'});
 }
 
-export function respondEvent(id: string, status: 'accepted' | 'declined' | 'tentative'): Promise<CalendarEventDTO> {
-    return pluginFetch('/api/v1/events/respond', {
+export type RespondStatus = 'accepted' | 'declined' | 'tentative';
+
+/** Returns event DTO, or null when Yandex hid the object after decline. */
+export async function respondEvent(id: string, status: RespondStatus): Promise<CalendarEventDTO | null> {
+    const body = await pluginFetch<CalendarEventDTO | {ok?: boolean}>('/api/v1/events/respond', {
         method: 'POST',
         body: JSON.stringify({id, status}),
     });
+    if (body && typeof body === 'object' && 'id' in body && (body as CalendarEventDTO).id) {
+        return body as CalendarEventDTO;
+    }
+    return null;
 }

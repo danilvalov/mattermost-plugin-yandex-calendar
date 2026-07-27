@@ -67,6 +67,14 @@
                 "default": false
             },
             {
+                "key": "EnableCalendarUI",
+                "display_name": "Enable Calendar product UI:",
+                "type": "bool",
+                "help_text": "When enabled, the Calendar product is shown in the Mattermost product switcher (left sidebar). Disable to hide the UI while keeping slash commands and notifications. Requires a page reload for users after changing.",
+                "placeholder": "",
+                "default": true
+            },
+            {
                 "key": "EncryptionKey",
                 "display_name": "Encryption key",
                 "type": "generated",

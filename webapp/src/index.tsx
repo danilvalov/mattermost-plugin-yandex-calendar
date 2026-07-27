@@ -8,6 +8,7 @@ import type {GlobalState} from '@mattermost/types/store';
 
 import manifest from 'manifest';
 
+import {fetchPublicConfig} from './client';
 import CalendarPage from './components/calendar_page';
 import {catalogForLocale, localeFromState} from './i18n';
 import type {PluginRegistry} from 'types/mattermost-webapp';
@@ -27,6 +28,17 @@ function getTranslations(locale: string): {[key: string]: string} {
 export default class Plugin {
     public async initialize(registry: PluginRegistry, store: Store<GlobalState>) {
         registry.registerTranslations(getTranslations);
+
+        let enableCalendarUI = true;
+        try {
+            const cfg = await fetchPublicConfig();
+            enableCalendarUI = cfg.enable_calendar_ui !== false;
+        } catch {
+            // Fail open: keep product UI if config endpoint is unreachable.
+        }
+        if (!enableCalendarUI) {
+            return;
+        }
 
         const locale = localeFromState(store.getState(), 'en');
         const productName = catalogForLocale(locale)['ycal.webapp.product_name'] || 'Calendar';

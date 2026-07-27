@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/danilvalov/mattermost-plugin-yandex-calendar/calendar/engine"
@@ -76,13 +77,14 @@ func (api *api) getEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 type patchEventPayload struct {
-	ID          string  `json:"id"`
-	Subject     *string `json:"subject,omitempty"`
-	Start       *string `json:"start,omitempty"`
-	End         *string `json:"end,omitempty"`
-	AllDay      *bool   `json:"all_day,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Location    *string `json:"location,omitempty"`
+	ID          string    `json:"id"`
+	Subject     *string   `json:"subject,omitempty"`
+	Start       *string   `json:"start,omitempty"`
+	End         *string   `json:"end,omitempty"`
+	AllDay      *bool     `json:"all_day,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	Location    *string   `json:"location,omitempty"`
+	Attendees   *[]string `json:"attendees,omitempty"`
 }
 
 func (api *api) patchEvent(w http.ResponseWriter, r *http.Request) {
@@ -185,6 +187,16 @@ func (api *api) patchEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if payload.Attendees != nil {
+		atts, resolveErr := api.resolveAttendeeEmails(*payload.Attendees)
+		if resolveErr != nil {
+			httputils.WriteBadRequestError(w, resolveErr)
+			return
+		}
+		updated.Attendees = atts
+		updated.RewriteAttendees = true
+	}
+
 	out, err := eng.UpdateEvent(engine.NewUser(user.MattermostUserID), &updated)
 	if err != nil {
 		api.Logger.With(bot.LogContext{"err": err.Error()}).Errorf("patchEvent")
@@ -255,8 +267,54 @@ func (api *api) respondEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	ev, err := eng.GetEvent(u, payload.ID)
 	if err != nil {
-		_ = httputils.WriteJSONResponse(w, map[string]any{"ok": true}, http.StatusOK)
+		// Decline often 404s the attendee copy; Accept/Tentative must keep the event in UI.
+		msg := strings.ToLower(err.Error())
+		if payload.Status == remote.EventResponseStatusDeclined &&
+			(strings.Contains(msg, "not found") || strings.Contains(msg, "no event") || strings.Contains(msg, "404")) {
+			_ = httputils.WriteJSONResponse(w, map[string]any{"ok": true}, http.StatusOK)
+			return
+		}
+		api.writeEngineError(w, err)
 		return
 	}
 	_ = httputils.WriteJSONResponse(w, eventToDTO(ev), http.StatusOK)
+}
+
+// resolveAttendeeEmails maps emails or Mattermost user IDs to remote.Attendee (deduped).
+func (api *api) resolveAttendeeEmails(raw []string) ([]*remote.Attendee, error) {
+	seen := map[string]struct{}{}
+	out := make([]*remote.Attendee, 0, len(raw))
+	for _, pa := range raw {
+		pa = strings.TrimSpace(pa)
+		if pa == "" {
+			continue
+		}
+		email := ""
+		name := ""
+		if strings.Contains(pa, "@") {
+			email = pa
+		} else {
+			mmUser, err := api.PluginAPI.GetMattermostUser(pa)
+			if err != nil {
+				return nil, fmt.Errorf("unknown attendee %q", pa)
+			}
+			email = mmUser.Email
+			name = strings.TrimSpace(mmUser.GetFullName())
+			if name == "" {
+				name = mmUser.Username
+			}
+		}
+		email = strings.ToLower(strings.TrimSpace(email))
+		if email == "" || !strings.Contains(email, "@") {
+			return nil, fmt.Errorf("attendee %q has no email", pa)
+		}
+		if _, ok := seen[email]; ok {
+			continue
+		}
+		seen[email] = struct{}{}
+		out = append(out, &remote.Attendee{
+			EmailAddress: &remote.EmailAddress{Address: email, Name: name},
+		})
+	}
+	return out, nil
 }

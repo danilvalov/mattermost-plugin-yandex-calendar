@@ -4,8 +4,11 @@ import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
+import Divider from '@mui/material/Divider';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import Popover from '@mui/material/Popover';
 import Snackbar from '@mui/material/Snackbar';
 import Stack from '@mui/material/Stack';
 import {ThemeProvider} from '@mui/material/styles';
@@ -14,24 +17,31 @@ import {EventCalendar} from '@mui/x-scheduler/event-calendar';
 import type {SchedulerEvent} from '@mui/x-scheduler/models';
 
 import {
-    createEvent as apiCreateEvent,
     deleteEvent,
     fetchEvents,
     fetchMe,
     getCaldavConnectURL,
     patchEvent,
+    respondEvent,
     type CalendarEventDTO,
     type MeResponse,
+    type RespondStatus,
 } from '../client';
 import {usePluginLocale, useT} from '../i18n';
-import {dtoToSchedulerEvent, eventClassForId, schedulerEventToAPITimes, schedulerEventsEqual, yandexCalendarURL} from '../mappers';
+import {
+    dtoFromEventElement,
+    dtoToSchedulerEvent,
+    schedulerEventToAPITimes,
+    schedulerEventsEqual,
+    yandexCalendarURL,
+} from '../mappers';
 import {createMattermostMuiTheme} from '../mm_theme';
 import {schedulerLocaleFor} from '../scheduler_locale';
+import EventModal, {type EventModalMode} from './event_modal';
 
 function usePluginTheme() {
     const [theme, setTheme] = useState(() => createMattermostMuiTheme());
     useEffect(() => {
-        // Re-read MM CSS vars after product mount (body vars can lag on first paint).
         setTheme(createMattermostMuiTheme());
     }, []);
     return theme;
@@ -70,7 +80,6 @@ function rangeAround(center: Date): {from: Date; to: Date} {
     return {from, to};
 }
 
-/** Classic scrollbar width (overlay scrollbars → 0). Used to un-collapse MUI header placeholder. */
 function measureScrollbarSize(): number {
     const el = document.createElement('div');
     el.style.cssText = 'overflow:scroll;position:absolute;visibility:hidden;width:100px;height:100px';
@@ -80,37 +89,12 @@ function measureScrollbarSize(): number {
     return size;
 }
 
-/** Open MUI EventDialog create flow (same as clicking an empty time slot). */
-function triggerNativeCreate(root: HTMLElement | null) {
-    if (!root) {
-        return;
+function isUnansweredInvite(d: CalendarEventDTO): boolean {
+    if (d.is_organizer || d.is_cancelled || !d.response_requested) {
+        return false;
     }
-    const layers = [...root.querySelectorAll('.MuiEventCalendar-dayTimeGridColumnInteractiveLayer')] as HTMLElement[];
-    const empty = layers.find((l) => !l.querySelector('.MuiEventCalendar-timeGridEvent')) || layers[Math.min(3, layers.length - 1)] || layers[0];
-    if (!empty) {
-        return;
-    }
-    const r = empty.getBoundingClientRect();
-    const x = r.left + Math.min(24, r.width / 2);
-    const y = r.top + 96;
-    empty.dispatchEvent(new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window,
-        clientX: x,
-        clientY: y,
-    }));
-}
-
-/** Open MUI EventDialog for an existing event (same as clicking the event chip). */
-function triggerNativeEventOpen(root: HTMLElement | null, eventId: string) {
-    if (!root) {
-        return;
-    }
-    const token = eventClassForId(eventId);
-    const el = root.querySelector(`.${token}`) as HTMLElement | null;
-    const clickable = (el?.closest('button, [role="button"]') || el) as HTMLElement | null;
-    clickable?.click();
+    const st = (d.response_status || '').trim();
+    return !st || st === 'not_answered';
 }
 
 const CalendarPage: React.FC = () => {
@@ -119,14 +103,13 @@ const CalendarPage: React.FC = () => {
     const locale = usePluginLocale();
     const schedulerLocale = schedulerLocaleFor(locale);
     const calendarWrapRef = useRef<HTMLDivElement>(null);
+    const dtosRef = useRef<CalendarEventDTO[]>([]);
 
     useLayoutEffect(() => {
         const size = measureScrollbarSize();
         calendarWrapRef.current?.style.setProperty('--ycal-scrollbar-size', `${size}px`);
     }, []);
 
-    // MM GlobalHeader has no background (transparent) + light sidebar-text.
-    // On product pages the area behind it is center-channel (white) → header looks "missing".
     useEffect(() => {
         const style = document.createElement('style');
         style.setAttribute('data-ycal', 'global-header');
@@ -134,6 +117,11 @@ const CalendarPage: React.FC = () => {
             #global-header,
             [class*="GlobalHeaderContainer"] {
                 background-color: var(--sidebar-teambar-bg, var(--sidebar-bg)) !important;
+            }
+            /* Native MUI event dialog is replaced by EventModal — hide flash. */
+            .MuiEventCalendar-eventDialog {
+                opacity: 0 !important;
+                pointer-events: none !important;
             }
         `;
         document.head.appendChild(style);
@@ -150,11 +138,18 @@ const CalendarPage: React.FC = () => {
     const [events, setEvents] = useState<SchedulerEvent[]>([]);
     const [range, setRange] = useState(() => rangeAround(new Date()));
     const [inviteAnchor, setInviteAnchor] = useState<null | HTMLElement>(null);
+    const [respondBusyId, setRespondBusyId] = useState<string | null>(null);
 
-    const pendingInvites = useMemo(
-        () => dtos.filter((d) => !d.is_organizer && d.response_requested && !d.is_cancelled),
-        [dtos],
-    );
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState<EventModalMode>('view');
+    const [modalEvent, setModalEvent] = useState<CalendarEventDTO | null>(null);
+    const [createDefaults, setCreateDefaults] = useState<{start: string; end: string; all_day: boolean} | undefined>();
+
+    useEffect(() => {
+        dtosRef.current = dtos;
+    }, [dtos]);
+
+    const pendingInvites = useMemo(() => dtos.filter(isUnansweredInvite), [dtos]);
 
     const loadMe = useCallback(async () => {
         try {
@@ -201,6 +196,44 @@ const CalendarPage: React.FC = () => {
         setRange(rangeAround(temporalToDate(visibleDate)));
     }, []);
 
+    const applyDto = useCallback((dto: CalendarEventDTO) => {
+        setDtos((cur) => {
+            const next = [...cur.filter((d) => d.id !== dto.id), dto];
+            return next;
+        });
+        setEvents((cur) => {
+            const mapped = dtoToSchedulerEvent(dto);
+            if (cur.some((x) => String(x.id) === dto.id)) {
+                return cur.map((x) => (String(x.id) === dto.id ? mapped : x));
+            }
+            return [...cur, mapped];
+        });
+        setModalEvent((cur) => (cur && cur.id === dto.id ? dto : cur));
+    }, []);
+
+    const removeDto = useCallback((id: string) => {
+        setDtos((cur) => cur.filter((d) => d.id !== id));
+        setEvents((cur) => cur.filter((x) => String(x.id) !== id));
+        setModalEvent((cur) => (cur && cur.id === id ? null : cur));
+    }, []);
+
+    const onRespond = useCallback(async (id: string, status: RespondStatus) => {
+        setRespondBusyId(id);
+        try {
+            const updated = await respondEvent(id, status);
+            if (!updated) {
+                removeDto(id);
+                setModalOpen(false);
+                return;
+            }
+            applyDto(updated);
+        } catch (e: any) {
+            setToast(e?.message || t('ycal.webapp.error_respond'));
+        } finally {
+            setRespondBusyId(null);
+        }
+    }, [applyDto, removeDto, t]);
+
     const onEventsChange = useCallback(async (next: SchedulerEvent[]) => {
         const prevById = new Map(events.map((e) => [String(e.id), e]));
         const nextById = new Map(next.map((e) => [String(e.id), e]));
@@ -228,21 +261,8 @@ const CalendarPage: React.FC = () => {
             const id = String(ev.id);
             const prev = prevById.get(id);
             if (!prev) {
-                patches.push((async () => {
-                    try {
-                        const times = schedulerEventToAPITimes(ev);
-                        const created = await apiCreateEvent({
-                            subject: String(ev.title || 'Event'),
-                            ...times,
-                            description: ev.description ? String(ev.description) : undefined,
-                        });
-                        setDtos((cur) => [...cur.filter((d) => d.id !== id), created]);
-                        setEvents((cur) => cur.map((x) => (String(x.id) === id ? dtoToSchedulerEvent(created) : x)));
-                    } catch (e: any) {
-                        setToast(e?.message || t('ycal.webapp.error_create'));
-                        setEvents((cur) => cur.filter((x) => String(x.id) !== id));
-                    }
-                })());
+                // Native create disabled — ignore optimistic inserts without modal.
+                setEvents((cur) => cur.filter((x) => String(x.id) !== id));
                 continue;
             }
             if (schedulerEventsEqual(prev, ev)) {
@@ -261,8 +281,7 @@ const CalendarPage: React.FC = () => {
                         ...times,
                         description: ev.description != null ? String(ev.description) : undefined,
                     });
-                    setDtos((cur) => cur.map((d) => (d.id === updated.id ? updated : d)));
-                    setEvents((cur) => cur.map((x) => (String(x.id) === updated.id ? dtoToSchedulerEvent(updated) : x)));
+                    applyDto(updated);
                 } catch (e: any) {
                     setToast(e?.message || t('ycal.webapp.error_update'));
                     setEvents((cur) => cur.map((x) => (String(x.id) === id ? prev : x)));
@@ -270,17 +289,129 @@ const CalendarPage: React.FC = () => {
             })());
         }
         await Promise.all(patches);
-    }, [dtos, events, t]);
+    }, [applyDto, dtos, events, t]);
 
-    const openCreate = useCallback(() => {
-        triggerNativeCreate(calendarWrapRef.current);
+    const openCreate = useCallback((defaults?: {start: string; end: string; all_day: boolean}) => {
+        setInviteAnchor(null);
+        setCreateDefaults(defaults);
+        setModalMode('create');
+        setModalEvent(null);
+        setModalOpen(true);
     }, []);
 
     const openEvent = useCallback((dto: CalendarEventDTO) => {
         setInviteAnchor(null);
-        // Defer so the Menu closes before the dialog mounts.
-        requestAnimationFrame(() => triggerNativeEventOpen(calendarWrapRef.current, dto.id));
+        setCreateDefaults(undefined);
+        setModalMode('view');
+        setModalEvent(dto);
+        setModalOpen(true);
     }, []);
+
+    const closeModal = useCallback(() => {
+        setModalOpen(false);
+        setCreateDefaults(undefined);
+    }, []);
+
+    useEffect(() => {
+        const root = calendarWrapRef.current;
+        if (!root) {
+            return;
+        }
+        const onCaptureClick = (ev: MouseEvent) => {
+            const target = ev.target as Element | null;
+            if (!target) {
+                return;
+            }
+            const chip = target.closest(
+                '.MuiEventCalendar-timeGridEvent, .MuiEventCalendar-dayGridEvent, .MuiEventCalendar-eventItem',
+            );
+            if (!chip || chip.className.includes('Placeholder')) {
+                return;
+            }
+            const dto = dtoFromEventElement(chip, dtosRef.current);
+            if (!dto) {
+                return;
+            }
+            ev.preventDefault();
+            ev.stopPropagation();
+            openEvent(dto);
+        };
+        root.addEventListener('click', onCaptureClick, true);
+        return () => root.removeEventListener('click', onCaptureClick, true);
+    }, [openEvent]);
+
+    // Empty-cell create opens native MUI EventDialog; steal times and show EventModal instead.
+    useEffect(() => {
+        const inputVal = (dialog: Element, name: string) =>
+            (dialog.querySelector(`input[name="${name}"]`) as HTMLInputElement | null)?.value?.trim() || '';
+
+        const stealDialog = (dialog: HTMLElement, attempt = 0) => {
+            if (dialog.dataset.ycalStolen === '1') {
+                return;
+            }
+
+            const startDate = inputVal(dialog, 'startDate');
+            if (!startDate && attempt < 12) {
+                window.setTimeout(() => stealDialog(dialog, attempt + 1), 16);
+                return;
+            }
+            dialog.dataset.ycalStolen = '1';
+
+            const startTime = inputVal(dialog, 'startTime');
+            const endDate = inputVal(dialog, 'endDate') || startDate;
+            const endTime = inputVal(dialog, 'endTime');
+            const allDaySwitch = dialog.querySelector('.MuiSwitch-input') as HTMLInputElement | null;
+            const allDay = Boolean(allDaySwitch?.checked) || (!startTime && Boolean(startDate));
+
+            const isCreate = Boolean(
+                calendarWrapRef.current?.querySelector(
+                    '.MuiEventCalendar-timeGridEventPlaceholder, .MuiEventCalendar-dayGridEventPlaceholder',
+                ),
+            );
+
+            const closeBtn = dialog.querySelector(
+                '.MuiEventCalendar-eventDialogCloseButton',
+            ) as HTMLElement | null;
+            closeBtn?.click();
+            if (!closeBtn) {
+                document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+            }
+
+            if (isCreate && startDate) {
+                openCreate(
+                    allDay
+                        ? {start: startDate, end: endDate, all_day: true}
+                        : {
+                            start: `${startDate}T${(startTime || '09:00').slice(0, 5)}`,
+                            end: `${endDate}T${(endTime || '09:30').slice(0, 5)}`,
+                            all_day: false,
+                        },
+                );
+                return;
+            }
+
+            const editing = calendarWrapRef.current?.querySelector(
+                '.MuiEventCalendar-timeGridEvent[data-editing], .MuiEventCalendar-dayGridEvent[data-editing], [data-editing]',
+            );
+            if (editing) {
+                const dto = dtoFromEventElement(editing, dtosRef.current);
+                if (dto) {
+                    openEvent(dto);
+                }
+            }
+        };
+
+        const scan = () => {
+            document.querySelectorAll<HTMLElement>('.MuiEventCalendar-eventDialog').forEach((dialog) => {
+                stealDialog(dialog);
+            });
+        };
+
+        const observer = new MutationObserver(scan);
+        observer.observe(document.body, {childList: true, subtree: true});
+        scan();
+        return () => observer.disconnect();
+    }, [openCreate, openEvent]);
 
     if (me && !me.is_connected) {
         return (
@@ -329,23 +460,76 @@ const CalendarPage: React.FC = () => {
                     sx={{px: 2, py: 1, borderBottom: 1, borderColor: 'divider', flexShrink: 0}}
                 >
                     <Typography variant='h6' sx={{flex: 1, color: 'text.primary'}}>{t('ycal.webapp.product_name')}</Typography>
-                    <Button size='small' variant='contained' onClick={openCreate}>{t('ycal.webapp.create')}</Button>
+                    <Button size='small' variant='contained' onClick={() => openCreate()}>{t('ycal.webapp.create')}</Button>
                     {pendingInvites.length > 0 && (
                         <>
                             <Button size='small' color='inherit' onClick={(e) => setInviteAnchor(e.currentTarget)}>
                                 {`${t('ycal.webapp.invites')} (${pendingInvites.length})`}
                             </Button>
-                            <Menu
+                            <Popover
                                 anchorEl={inviteAnchor}
                                 open={Boolean(inviteAnchor)}
                                 onClose={() => setInviteAnchor(null)}
+                                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+                                transformOrigin={{vertical: 'top', horizontal: 'right'}}
                             >
-                                {pendingInvites.map((inv) => (
-                                    <MenuItem key={inv.id} onClick={() => openEvent(inv)}>
-                                        {inv.subject || inv.ical_uid}
-                                    </MenuItem>
-                                ))}
-                            </Menu>
+                                <List dense sx={{minWidth: 320, maxWidth: 420, py: 0}}>
+                                    {pendingInvites.map((inv, idx) => (
+                                        <React.Fragment key={inv.id}>
+                                            {idx > 0 && <Divider/>}
+                                            <ListItem
+                                                alignItems='flex-start'
+                                                sx={{flexDirection: 'column', alignItems: 'stretch', gap: 1, py: 1.5}}
+                                            >
+                                                <ListItemText
+                                                    primary={inv.subject || inv.ical_uid}
+                                                    primaryTypographyProps={{
+                                                        sx: {cursor: 'pointer', fontWeight: 600},
+                                                        onClick: () => openEvent(inv),
+                                                    }}
+                                                    secondary={inv.start}
+                                                />
+                                                <Stack direction='row' spacing={1} useFlexGap flexWrap='wrap'>
+                                                    <Button
+                                                        size='small'
+                                                        variant='outlined'
+                                                        disabled={respondBusyId === inv.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onRespond(inv.id, 'accepted');
+                                                        }}
+                                                    >
+                                                        {t('ycal.webapp.accept')}
+                                                    </Button>
+                                                    <Button
+                                                        size='small'
+                                                        variant='outlined'
+                                                        disabled={respondBusyId === inv.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onRespond(inv.id, 'tentative');
+                                                        }}
+                                                    >
+                                                        {t('ycal.webapp.tentative')}
+                                                    </Button>
+                                                    <Button
+                                                        size='small'
+                                                        color='error'
+                                                        variant='outlined'
+                                                        disabled={respondBusyId === inv.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onRespond(inv.id, 'declined');
+                                                        }}
+                                                    >
+                                                        {t('ycal.webapp.decline')}
+                                                    </Button>
+                                                </Stack>
+                                            </ListItem>
+                                        </React.Fragment>
+                                    ))}
+                                </List>
+                            </Popover>
                         </>
                     )}
                     <Button size='small' color='inherit' onClick={refresh}>{t('ycal.webapp.refresh')}</Button>
@@ -392,7 +576,6 @@ const CalendarPage: React.FC = () => {
                                 bgcolor: 'background.default',
                                 color: 'text.primary',
                             },
-                            // v1: hide unused mini-calendar side panel + its burger toggle.
                             '& .MuiEventCalendar-sidePanelCollapse, & .MuiEventCalendar-sidePanel': {
                                 display: 'none !important',
                                 width: '0 !important',
@@ -402,7 +585,6 @@ const CalendarPage: React.FC = () => {
                             '& .MuiEventCalendar-headerToolbarSidePanelToggle, & .MuiEventCalendar-headerToolbarLeftElement > .MuiIconButton-root:first-of-type, & button[aria-label="Open side panel"], & button[aria-label="Close side panel"]': {
                                 display: 'none !important',
                             },
-                            // Match product header Stack px:2 so month label lines up with «Календарь».
                             '& .MuiEventCalendar-headerToolbar': {
                                 px: 2,
                                 boxSizing: 'border-box',
@@ -410,7 +592,6 @@ const CalendarPage: React.FC = () => {
                             '& .MuiEventCalendar-headerToolbarLeftElement': {
                                 gap: 0,
                             },
-                            // MUI placeholder collapses to 0 under fit-content grid; force classic scrollbar width.
                             '& .MuiEventCalendar-dayTimeGridScrollablePlaceholder': {
                                 width: 'var(--ycal-scrollbar-size) !important',
                                 minWidth: 'var(--ycal-scrollbar-size) !important',
@@ -442,6 +623,29 @@ const CalendarPage: React.FC = () => {
                         />
                     </Box>
                 </Box>
+
+                <EventModal
+                    open={modalOpen}
+                    mode={modalMode}
+                    event={modalEvent}
+                    meEmail={me?.email}
+                    createDefaults={createDefaults}
+                    onClose={closeModal}
+                    onSaved={(dto) => {
+                        applyDto(dto);
+                    }}
+                    onDeleted={(id) => {
+                        removeDto(id);
+                    }}
+                    onResponded={(id, dto) => {
+                        if (!dto) {
+                            removeDto(id);
+                            closeModal();
+                            return;
+                        }
+                        applyDto(dto);
+                    }}
+                />
 
                 <Snackbar open={Boolean(toast)} autoHideDuration={5000} onClose={() => setToast(null)} message={toast || ''}/>
             </Box>

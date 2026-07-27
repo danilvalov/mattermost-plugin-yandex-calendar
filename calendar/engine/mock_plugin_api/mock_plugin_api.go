@@ -224,6 +224,21 @@ func (mr *MockPluginAPIMockRecorder) SearchLinkableChannelForUser(arg0, arg1, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchLinkableChannelForUser", reflect.TypeOf((*MockPluginAPI)(nil).SearchLinkableChannelForUser), arg0, arg1, arg2)
 }
 
+// SearchUsers mocks base method.
+func (m *MockPluginAPI) SearchUsers(arg0 string, arg1 int, arg2 string) ([]*model.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchUsers", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]*model.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchUsers indicates an expected call of SearchUsers.
+func (mr *MockPluginAPIMockRecorder) SearchUsers(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchUsers", reflect.TypeOf((*MockPluginAPI)(nil).SearchUsers), arg0, arg1, arg2)
+}
+
 // UpdateMattermostUserCustomStatus mocks base method.
 func (m *MockPluginAPI) UpdateMattermostUserCustomStatus(arg0 string, arg1 *model.CustomStatus) *model.AppError {
 	m.ctrl.T.Helper()

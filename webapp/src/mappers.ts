@@ -63,20 +63,26 @@ export function yandexCalendarURL(dto?: CalendarEventDTO | null): string {
 
 /** Resolve DTO from a clicked calendar event DOM node (via className token). */
 export function dtoFromEventElement(el: Element, dtos: CalendarEventDTO[]): CalendarEventDTO | null {
-    const token = [...el.classList].find((c) => c.startsWith('ycal-'));
-    if (token) {
-        const hit = dtos.find((d) => eventClassForId(d.id) === token);
-        if (hit) {
-            return hit;
+    let node: Element | null = el;
+    while (node) {
+        const token = [...node.classList].find((c) => c.startsWith('ycal-'));
+        if (token) {
+            const hit = dtos.find((d) => eventClassForId(d.id) === token);
+            if (hit) {
+                return hit;
+            }
         }
+        node = node.parentElement;
     }
+    // Title fallback only when unambiguous (avoid wrong event among same-title items).
     const title = (
         el.querySelector('.MuiEventCalendar-timeGridEventTitle, .MuiEventCalendar-dayGridEventTitle, .MuiEventCalendar-eventItemTitle')?.textContent ||
+        el.textContent ||
         ''
     ).trim();
     if (!title) {
         return null;
     }
     const matches = dtos.filter((d) => (d.subject || '(no title)') === title);
-    return matches[0] || null;
+    return matches.length === 1 ? matches[0] : null;
 }

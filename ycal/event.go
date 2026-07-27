@@ -204,7 +204,69 @@ func patchVEVENTFromRemote(cal *ical.Calendar, ve *ical.Component, in *remote.Ev
 		}
 	}
 
+	if in.RewriteAttendees {
+		rewriteAttendees(ve, in.Attendees)
+	}
+
 	return nil
+}
+
+func cloneAttendeeProp(p ical.Prop) *ical.Prop {
+	out := ical.NewProp(ical.PropAttendee)
+	out.Value = p.Value
+	for k, vs := range p.Params {
+		out.Params[k] = append([]string(nil), vs...)
+	}
+	return out
+}
+
+func rewriteAttendees(ve *ical.Component, attendees []*remote.Attendee) {
+	if ve == nil {
+		return
+	}
+	old := map[string]*ical.Prop{}
+	for _, p := range ve.Props.Values(ical.PropAttendee) {
+		mail := normalizeEmail(mailtoAddress(p.Value))
+		if mail == "" {
+			continue
+		}
+		old[mail] = cloneAttendeeProp(p)
+	}
+	ve.Props.Del(ical.PropAttendee)
+	seen := map[string]struct{}{}
+	for _, a := range attendees {
+		if a == nil || a.EmailAddress == nil {
+			continue
+		}
+		addr := normalizeEmail(strings.TrimPrefix(a.EmailAddress.Address, "mailto:"))
+		if addr == "" {
+			continue
+		}
+		if _, dup := seen[addr]; dup {
+			continue
+		}
+		seen[addr] = struct{}{}
+		if prev, ok := old[addr]; ok {
+			prev.Value = "mailto:" + addr
+			if name := strings.TrimSpace(a.EmailAddress.Name); name != "" {
+				prev.Params.Set(ical.ParamCommonName, name)
+			}
+			ve.Props.Add(prev)
+			continue
+		}
+		ap := ical.NewProp(ical.PropAttendee)
+		ap.Value = "mailto:" + addr
+		partStat := "NEEDS-ACTION"
+		if a.Status != nil {
+			partStat = participationFromRemote(a.Status)
+		}
+		ap.Params.Set(ical.ParamRSVP, "TRUE")
+		ap.Params.Set(ical.ParamParticipationStatus, partStat)
+		if cn := strings.TrimSpace(a.EmailAddress.Name); cn != "" {
+			ap.Params.Set(ical.ParamCommonName, cn)
+		}
+		ve.Props.Add(ap)
+	}
 }
 
 // timesNeedRewrite is false when wall-clock start/end already match (keeps original TZID props).
@@ -289,7 +351,33 @@ func assertEventUpdateApplied(want, got *remote.Event) error {
 			return denied
 		}
 	}
+	if want.RewriteAttendees {
+		wantSet := attendeeEmailSet(want.Attendees)
+		gotSet := attendeeEmailSet(got.Attendees)
+		if len(wantSet) != len(gotSet) {
+			return denied
+		}
+		for email := range wantSet {
+			if _, ok := gotSet[email]; !ok {
+				return denied
+			}
+		}
+	}
 	return nil
+}
+
+func attendeeEmailSet(attendees []*remote.Attendee) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, a := range attendees {
+		if a == nil || a.EmailAddress == nil {
+			continue
+		}
+		email := normalizeEmail(a.EmailAddress.Address)
+		if email != "" {
+			out[email] = struct{}{}
+		}
+	}
+	return out
 }
 
 func (c *client) AcceptEvent(_, eventID string) error {

@@ -9,7 +9,7 @@ const manifest = JSON.parse(`
     "support_url": "https://github.com/danilvalov/mattermost-plugin-yandex-calendar/issues",
     "release_notes_url": "https://github.com/danilvalov/mattermost-plugin-yandex-calendar/releases/tag/v0.9.5",
     "icon_path": "assets/profile-ycal.svg",
-    "version": "0.9.5+ee6a99b",
+    "version": "0.9.5+495f33c",
     "min_server_version": "10.7.0",
     "server": {
         "executables": {
@@ -77,6 +77,16 @@ const manifest = JSON.parse(`
                 "help_text": "",
                 "placeholder": "",
                 "default": false,
+                "hosting": "",
+                "secret": false
+            },
+            {
+                "key": "EnableCalendarUI",
+                "display_name": "Enable Calendar product UI:",
+                "type": "bool",
+                "help_text": "When enabled, the Calendar product is shown in the Mattermost product switcher (left sidebar). Disable to hide the UI while keeping slash commands and notifications. Requires a page reload for users after changing.",
+                "placeholder": "",
+                "default": true,
                 "hosting": "",
                 "secret": false
             },

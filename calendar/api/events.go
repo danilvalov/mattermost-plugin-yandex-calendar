@@ -285,27 +285,12 @@ func (api *api) createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, pa := range payload.Attendees {
-		var emailAddress string
-
-		if strings.Contains(pa, "@") {
-			emailAddress = pa
-		} else {
-			attendeeUser, err := api.Store.LoadUser(pa)
-			if err != nil {
-				api.Logger.With(bot.LogContext{"err": err.Error(), "attendee_mm_id": pa}).Errorf("error loading attendee from mattermost user id")
-				continue
-			}
-
-			emailAddress = attendeeUser.Remote.Mail
-		}
-
-		event.Attendees = append(event.Attendees, &remote.Attendee{
-			EmailAddress: &remote.EmailAddress{
-				Address: emailAddress,
-			},
-		})
+	atts, resolveErr := api.resolveAttendeeEmails(payload.Attendees)
+	if resolveErr != nil {
+		httputils.WriteBadRequestError(w, resolveErr)
+		return
 	}
+	event.Attendees = atts
 
 	event, err := client.CreateEvent(event)
 	if err != nil {

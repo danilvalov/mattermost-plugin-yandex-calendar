@@ -31,6 +31,8 @@ const (
 	PathGet           = "/get"
 	PathProvider      = "/provider"
 	PathConnectedUser = "/me"
+	PathUserSearch    = "/users/search"
+	PathConfig        = "/config"
 
 	FullPathEventNotification = PathNotification + PathEvent
 	FullPathOAuth2Redirect    = PathOAuth2 + PathComplete

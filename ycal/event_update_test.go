@@ -112,6 +112,87 @@ func TestAssertEventUpdateApplied(t *testing.T) {
 	}
 }
 
+func TestPatchVEVENTFromRemote_RewriteAttendees(t *testing.T) {
+	t.Parallel()
+
+	cal, ve := mustDecodeVEVENT(t, `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:patch-att@example.com
+DTSTART:20260504T100000Z
+DTEND:20260504T110000Z
+SUMMARY:Meet
+ORGANIZER:mailto:org@example.com
+ATTENDEE;PARTSTAT=ACCEPTED;CN=Keep Me;RSVP=FALSE;ROLE=CHAIR;CUTYPE=INDIVIDUAL:mailto:keep@example.com
+ATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:drop@example.com
+END:VEVENT
+END:VCALENDAR`)
+
+	loc := time.UTC
+	in := &remote.Event{
+		Subject:          "Meet",
+		IsAllDay:         false,
+		Start:            remote.NewDateTime(time.Date(2026, 5, 4, 10, 0, 0, 0, loc), "UTC"),
+		End:              remote.NewDateTime(time.Date(2026, 5, 4, 11, 0, 0, 0, loc), "UTC"),
+		RewriteAttendees: true,
+		Attendees: []*remote.Attendee{
+			{EmailAddress: &remote.EmailAddress{Address: "keep@example.com"}},
+			{EmailAddress: &remote.EmailAddress{Address: "new@example.com", Name: "New"}},
+		},
+	}
+	if err := patchVEVENTFromRemote(cal, ve, in); err != nil {
+		t.Fatal(err)
+	}
+	atts := ve.Props.Values(ical.PropAttendee)
+	if len(atts) != 2 {
+		t.Fatalf("attendees: %d", len(atts))
+	}
+	byMail := map[string]*ical.Prop{}
+	for i := range atts {
+		byMail[strings.ToLower(atts[i].Value)] = &atts[i]
+	}
+	keep := byMail["mailto:keep@example.com"]
+	if keep == nil || keep.Params.Get(ical.ParamParticipationStatus) != "ACCEPTED" {
+		t.Fatalf("keep PARTSTAT: %#v", keep)
+	}
+	if keep.Params.Get(ical.ParamRSVP) != "FALSE" {
+		t.Fatalf("keep RSVP: %#v", keep)
+	}
+	if keep.Params.Get(ical.ParamRole) != "CHAIR" || keep.Params.Get(ical.ParamCalendarUserType) != "INDIVIDUAL" {
+		t.Fatalf("keep ROLE/CUTYPE: %#v", keep)
+	}
+	nw := byMail["mailto:new@example.com"]
+	if nw == nil || nw.Params.Get(ical.ParamParticipationStatus) != "NEEDS-ACTION" {
+		t.Fatalf("new PARTSTAT: %#v", nw)
+	}
+	if nw.Params.Get(ical.ParamRSVP) != "TRUE" {
+		t.Fatalf("new RSVP: %#v", nw)
+	}
+	if _, ok := byMail["mailto:drop@example.com"]; ok {
+		t.Fatal("drop should be gone")
+	}
+}
+
+func TestAssertEventUpdateApplied_Attendees(t *testing.T) {
+	t.Parallel()
+	err := assertEventUpdateApplied(
+		&remote.Event{
+			RewriteAttendees: true,
+			Attendees: []*remote.Attendee{
+				{EmailAddress: &remote.EmailAddress{Address: "a@example.com"}},
+			},
+		},
+		&remote.Event{
+			Attendees: []*remote.Attendee{
+				{EmailAddress: &remote.EmailAddress{Address: "b@example.com"}},
+			},
+		},
+	)
+	if err == nil {
+		t.Fatal("expected attendees mismatch error")
+	}
+}
+
 func TestPatchVEVENTFromRemote_AllDayExclusive(t *testing.T) {
 	t.Parallel()
 

@@ -106,6 +106,29 @@ func (a *API) GetMattermostUser(mattermostUserID string) (*model.User, error) {
 	return mmuser, nil
 }
 
+func (a *API) SearchUsers(term string, limit int, teamID string) ([]*model.User, error) {
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 50 {
+		limit = 50
+	}
+	users, appErr := a.api.SearchUsers(&model.UserSearch{
+		Term:          term,
+		Limit:         limit,
+		TeamId:        teamID,
+		AllowInactive: false,
+	})
+	if appErr != nil {
+		return nil, appErr
+	}
+	return users, nil
+}
+
 func (a *API) GetPreferenceForUser(userID, category, name string) (*model.Preference, error) {
 	pref, appErr := a.api.GetPreferenceForUser(userID, category, name)
 	if appErr != nil {

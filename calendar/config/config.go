@@ -19,6 +19,17 @@ type StoredConfig struct {
 	EnableDailySummary bool
 
 	EncryptionKey string
+
+	// EnableCalendarUI toggles Mattermost product UI (registerProduct). nil/missing = enabled.
+	EnableCalendarUI *bool
+}
+
+// CalendarUIEnabled reports whether the calendar product UI should register. Default true.
+func (c StoredConfig) CalendarUIEnabled() bool {
+	if c.EnableCalendarUI == nil {
+		return true
+	}
+	return *c.EnableCalendarUI
 }
 
 func (c *StoredConfig) IsOAuthConfigured() bool {

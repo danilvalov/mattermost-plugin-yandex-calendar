@@ -75,14 +75,26 @@ func veventToRemoteEvent(parent *ical.Calendar, ve *ical.Component) (*remote.Eve
 		Start:             start,
 		End:               end,
 		Location:          locationRemote(location),
-		IsCancelled:    strings.EqualFold(status, "CANCELLED"),
-		IsOrganizer:    false,
-		Organizer:      org,
-		ResponseStatus: resp,
-		Attendees:      attendeesFromVEVENT(ve),
+		IsCancelled:       strings.EqualFold(status, "CANCELLED"),
+		IsOrganizer:       false,
+		Organizer:         org,
+		ResponseStatus:    resp,
+		Attendees:         attendeesFromVEVENT(ve),
+		Conference:        conferenceFromVEVENT(ve),
 	}
 
 	return ev, nil
+}
+
+func conferenceFromVEVENT(ve *ical.Component) *remote.Conference {
+	url := propText(ve, "X-TELEMOST-CONFERENCE", "X-YANDEX-TELEMOST-URL")
+	if url == "" {
+		return nil
+	}
+	return &remote.Conference{
+		Application: "Yandex Telemost",
+		URL:         url,
+	}
 }
 
 func applyCurrentUserContext(ev *remote.Event, userEmail string) {

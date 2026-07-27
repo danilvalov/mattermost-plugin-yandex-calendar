@@ -32,6 +32,8 @@ type Event struct {
 	IsAllDay                   bool                 `json:"isAllDay,omitempty"`
 	IsRecurring                bool                 `json:"isRecurring,omitempty"`
 	ResponseRequested          bool                 `json:"responseRequested,omitempty"`
+	// RewriteAttendees tells CalDAV UpdateEvent to replace ATTENDEE props (nil/false = leave as-is).
+	RewriteAttendees bool `json:"-"`
 }
 
 // Editable reports whether the calendar UI may offer content mutation.

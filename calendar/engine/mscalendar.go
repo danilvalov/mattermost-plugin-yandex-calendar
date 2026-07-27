@@ -44,6 +44,7 @@ type Dependencies struct {
 type PluginAPI interface {
 	GetMattermostUser(mattermostUserID string) (*model.User, error)
 	GetMattermostUserByUsername(mattermostUsername string) (*model.User, error)
+	SearchUsers(term string, limit int, teamID string) ([]*model.User, error)
 	GetPreferenceForUser(userID, category, name string) (*model.Preference, error)
 	GetPreferencesForUser(userID string) (model.Preferences, error)
 	GetMattermostUserStatus(mattermostUserID string) (*model.Status, error)

@@ -180,6 +180,51 @@ END:VCALENDAR`
 	}
 }
 
+func TestVeventToRemoteEvent_MapsTelemostConference(t *testing.T) {
+	t.Parallel()
+
+	raw := `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+UID:test-uid-telemost@example.com
+DTSTART:20260504T120000Z
+DTEND:20260504T130000Z
+SUMMARY:Meeting
+X-TELEMOST-CONFERENCE:https://telemost.360.yandex.ru/j/8510081139
+URL:https://calendar.yandex.ru/event?event_id=1
+END:VEVENT
+END:VCALENDAR`
+
+	dec := ical.NewDecoder(strings.NewReader(raw))
+	cal, err := dec.Decode()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ve *ical.Component
+	for _, ch := range cal.Children {
+		if ch.Name == ical.CompEvent {
+			ve = ch
+			break
+		}
+	}
+	if ve == nil {
+		t.Fatal("no vevent")
+	}
+	ev, err := veventToRemoteEvent(cal, ve)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ev.Conference == nil {
+		t.Fatal("missing conference")
+	}
+	if got, want := ev.Conference.URL, "https://telemost.360.yandex.ru/j/8510081139"; got != want {
+		t.Fatalf("conference url: got %q want %q", got, want)
+	}
+	if got, want := ev.Weblink, "https://calendar.yandex.ru/event?event_id=1"; got != want {
+		t.Fatalf("weblink should stay calendar URL: got %q", got)
+	}
+}
+
 func TestVeventToRemoteEvent_MapsURLAndDescription(t *testing.T) {
 	t.Parallel()
 
