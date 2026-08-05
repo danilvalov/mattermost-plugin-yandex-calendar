@@ -20,14 +20,20 @@ export function eventClassForId(id: string): string {
     return `ycal-${(h >>> 0).toString(36)}`;
 }
 
+/** MUI only treats trailing Z as an instant; +HH:mm is re-derived via browser local → event TZ (shifts when they differ). */
+function toUtcIso(iso: string): string {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? iso : d.toISOString();
+}
+
 export function dtoToSchedulerEvent(dto: CalendarEventDTO): SchedulerEvent {
     // MUI uses inclusive all-day end (endOfDay); API/iCal use exclusive end.
-    const end = dto.all_day ? exclusiveToInclusiveDate(dto.end) : dto.end;
+    const end = dto.all_day ? exclusiveToInclusiveDate(dto.end) : toUtcIso(dto.end);
     return {
         id: dto.id,
         title: dto.subject || '(no title)',
         description: dto.description,
-        start: dto.all_day ? toDateOnly(dto.start) : dto.start,
+        start: dto.all_day ? toDateOnly(dto.start) : toUtcIso(dto.start),
         end,
         allDay: dto.all_day,
         timezone: dto.timezone || 'UTC',

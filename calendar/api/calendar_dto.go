@@ -74,14 +74,16 @@ func eventToDTO(ev *remote.Event) calendarEventDTO {
 		if ev.IsAllDay {
 			dto.Start = ev.Start.Time().UTC().Format("2006-01-02")
 		} else {
-			dto.Start = ev.Start.Time().Format(time.RFC3339)
+			// Always UTC Z so MUI Scheduler takes the instant path (non-Z offsets are
+			// re-parsed as wall-time via browser local → event TZ and shift the board).
+			dto.Start = ev.Start.Time().UTC().Format(time.RFC3339)
 		}
 	}
 	if ev.End != nil {
 		if ev.IsAllDay {
 			dto.End = ev.End.Time().UTC().Format("2006-01-02")
 		} else {
-			dto.End = ev.End.Time().Format(time.RFC3339)
+			dto.End = ev.End.Time().UTC().Format(time.RFC3339)
 		}
 		if dto.Timezone == "" {
 			dto.Timezone = ev.End.TimeZone
