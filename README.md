@@ -16,6 +16,7 @@ A [Mattermost](https://mattermost.com) calendar plugin that syncs **Yandex Calen
 - Daily summary, reminders, status sync, and slash-command agendas
 - Connect with Yandex email + app password through `/ycal connect` and the CalDAV connect page
 - Background polling for event changes (Yandex does not support calendar push webhooks)
+- System Console **Usage** panel (connected users, adoption %, feature adoption) and Site Statistics tiles for admins
 
 ## Build
 

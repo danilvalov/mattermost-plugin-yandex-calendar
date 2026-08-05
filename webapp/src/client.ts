@@ -33,6 +33,20 @@ export type PublicConfig = {
     enable_calendar_ui: boolean;
 };
 
+export type AdminStats = {
+    connected_users: number;
+    inactive_users: number;
+    subscriptions: number;
+    receive_reminders: number;
+    daily_summary_enabled: number;
+    set_custom_status: number;
+    status_away: number;
+    status_dnd: number;
+    status_not_set: number;
+    with_channel_events: number;
+    with_active_events: number;
+};
+
 export type MMUserHit = {
     id: string;
     username: string;
@@ -94,6 +108,20 @@ export function fetchMe(): Promise<MeResponse> {
 /** Public plugin flags for the webapp (no CalDAV connection required). */
 export function fetchPublicConfig(): Promise<PublicConfig> {
     return pluginFetch('/api/v1/config');
+}
+
+/** Admin-only usage snapshot from plugin KV. */
+export function fetchAdminStats(): Promise<AdminStats> {
+    return pluginFetch('/api/v1/admin/stats');
+}
+
+/** Active human Mattermost users (for adoption %; excludes bots and deleted). */
+export async function fetchMattermostTotalUsersCount(): Promise<number> {
+    const stats = await Client4.getFilteredUsersStats({
+        include_bots: false,
+        include_deleted: false,
+    });
+    return stats.total_users_count ?? 0;
 }
 
 export function fetchEvents(from: string, to: string): Promise<CalendarEventDTO[]> {

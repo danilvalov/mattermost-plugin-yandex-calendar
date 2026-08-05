@@ -80,6 +80,12 @@
                 "type": "generated",
                 "help_text": "**Required**: The encryption key used to store user credentials and data. If this is regenerated all user authentication data will be lost and users will need to reconnect.",
                 "secret": true
+            },
+            {
+                "key": "UsageStats",
+                "type": "custom",
+                "display_name": "Usage",
+                "help_text": "Read-only statistics based on connected Yandex Calendar accounts."
             }
         ]
     },

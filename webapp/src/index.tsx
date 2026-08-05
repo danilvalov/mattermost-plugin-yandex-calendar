@@ -1,14 +1,15 @@
 // Copyright (c) 2015-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
 
-import React from 'react';
 import type {Store} from 'redux';
 
 import type {GlobalState} from '@mattermost/types/store';
 
 import manifest from 'manifest';
 
-import {fetchPublicConfig} from './client';
+import {fetchAdminStats, fetchPublicConfig} from './client';
+import {convertAdminStatsToPanels} from './components/admin_stats/site_stats';
+import UsageStats from './components/admin_stats/usage_stats';
 import CalendarPage from './components/calendar_page';
 import {catalogForLocale, localeFromState} from './i18n';
 import type {PluginRegistry} from 'types/mattermost-webapp';
@@ -28,6 +29,23 @@ function getTranslations(locale: string): {[key: string]: string} {
 export default class Plugin {
     public async initialize(registry: PluginRegistry, store: Store<GlobalState>) {
         registry.registerTranslations(getTranslations);
+
+        // Admin analytics must register even when calendar product UI is disabled.
+        if (registry.registerAdminConsoleCustomSetting) {
+            registry.registerAdminConsoleCustomSetting('UsageStats', UsageStats, {showTitle: false});
+        }
+        if (registry.registerSiteStatisticsHandler) {
+            registry.registerSiteStatisticsHandler(async () => {
+                const locale = localeFromState(store.getState(), 'en');
+                const catalog = catalogForLocale(locale);
+                try {
+                    const data = await fetchAdminStats();
+                    return convertAdminStatsToPanels(data, catalog);
+                } catch {
+                    return convertAdminStatsToPanels(null, catalog);
+                }
+            });
+        }
 
         let enableCalendarUI = true;
         try {

@@ -36,6 +36,7 @@ type UserStore interface {
 	DeleteUser(mattermostUserID string) error
 	ForceDeleteUser(mattermostUserID, remoteUserID string) error
 	GetConnectedUserCount() (uint64, error)
+	GetStats() (*Stats, error)
 	ModifyUserIndex(modify func(userIndex UserIndex) (UserIndex, error)) error
 	StoreUserInIndex(user *User) error
 	DeleteUserFromIndex(mattermostUserID string) error

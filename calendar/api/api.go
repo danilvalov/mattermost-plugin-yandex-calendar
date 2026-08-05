@@ -50,6 +50,7 @@ func Init(h *httputils.Handler, env engine.Env, notificationProcessor engine.Not
 	apiRoutes.HandleFunc(config.PathConnectedUser, api.connectedUserHandler)
 	apiRoutes.HandleFunc(config.PathUserSearch, api.searchMMUsers).Methods(http.MethodGet)
 	apiRoutes.HandleFunc(config.PathConfig, api.publicConfig).Methods(http.MethodGet)
+	apiRoutes.HandleFunc(config.PathAdminStats, api.adminStats).Methods(http.MethodGet)
 
 	// Returns provider information for the plugin to use
 	apiRoutes.HandleFunc(config.PathProvider, func(w http.ResponseWriter, r *http.Request) {

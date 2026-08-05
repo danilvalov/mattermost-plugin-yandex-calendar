@@ -4,6 +4,8 @@ This plugin integrates Mattermost with **Yandex Calendar** using the CalDAV prot
 
 Slash commands, reminders, and the settings panel follow the same calendar UX patterns as Mattermost’s official calendar plugins; this project adds a `ycal` remote that talks to Yandex over CalDAV and includes server-side connect and polling where push webhooks are not available.
 
+Administrators can review connection and feature-adoption counts on the plugin’s System Console page (**Usage** panel) and on **Site Statistics**. See [configuration.md](configuration.md#usage-statistics).
+
 - [Set up](setup.md)
 - [Configure](configuration.md)
 - [Use](usage.md)

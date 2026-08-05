@@ -13,5 +13,6 @@ alwaysApply: false
 - Новых провайдеров календаря реализуй отдельным пакетом по образцу `ycal`/`msgraph`: реализация `remote.Remote` + регистрация в `remote.Makers` в `init()`.
 - Конфигурируемые возможности провайдера (`PasswordAuth`, `EventNotifications`, `EnableEventPolling` и т.д.) задавай через `config.Provider.Features`, а поведение включай фиче-флагами, без форков логики по коду.
 - Для хранения данных используй `store.NewPluginStore` и `kvstore`-обертки (hashed/encrypted/ttl/cache); не записывай сырой чувствительный payload в KV мимо store-слоя.
+- Admin usage analytics: агрегаты только через `store.GetStats()` (UserIndex → LoadUser, без PII); HTTP — `GET /api/v1/admin/stats` с `engine.New(...).IsAuthorizedAdmin` (не nil `Dependencies.IsAuthorizedAdmin`). UI — `registerAdminConsoleCustomSetting('UsageStats', …)` + опционально `registerSiteStatisticsHandler`. Adoption % в webapp: `Client4.getFilteredUsersStats({include_bots: false, include_deleted: false})`.
 - Ошибки возвращай с контекстом (`errors.Wrap/WithMessage`) и логируй через `bot.Logger` с контекстом, чтобы не терять источник сбоя.
 - Любой новый пользовательский флоу должен иметь покрытие в `*_test.go` рядом с кодом и, при необходимости, моки в `mock_*` пакетах.

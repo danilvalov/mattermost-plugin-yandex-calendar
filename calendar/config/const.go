@@ -33,6 +33,7 @@ const (
 	PathConnectedUser = "/me"
 	PathUserSearch    = "/users/search"
 	PathConfig        = "/config"
+	PathAdminStats    = "/admin/stats"
 
 	FullPathEventNotification = PathNotification + PathEvent
 	FullPathOAuth2Redirect    = PathOAuth2 + PathComplete

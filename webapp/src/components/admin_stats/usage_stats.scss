@@ -1,0 +1,113 @@
+.YcalUsageStats {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background-color: rgba(var(--center-channel-color-rgb), 0.04);
+    border: 1px solid rgba(var(--center-channel-color-rgb), 0.08);
+    border-radius: 4px;
+}
+
+.YcalUsageStats__header {
+    margin-bottom: 12px;
+}
+
+.YcalUsageStats__title {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    color: var(--center-channel-color);
+}
+
+.YcalUsageStats__subtitle {
+    margin: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: rgba(var(--center-channel-color-rgb), 0.72);
+}
+
+.YcalUsageStats__subtitle--loading {
+    color: rgba(var(--center-channel-color-rgb), 0.64);
+}
+
+.YcalUsageStats__error {
+    margin: 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--error-text);
+}
+
+.YcalUsageStats__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.YcalUsageStats__grids {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+@media (max-width: 700px) {
+    .YcalUsageStats__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.YcalUsageStats__card {
+    padding: 12px 14px;
+    background-color: rgba(var(--center-channel-color-rgb), 0.04);
+    border: 1px solid rgba(var(--center-channel-color-rgb), 0.08);
+    border-radius: 4px;
+    min-height: 64px;
+}
+
+.YcalUsageStats__card--primary {
+    border-color: rgba(var(--center-channel-color-rgb), 0.16);
+}
+
+.YcalUsageStats__card--skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(var(--center-channel-color-rgb), 0.04) 0%,
+        rgba(var(--center-channel-color-rgb), 0.08) 50%,
+        rgba(var(--center-channel-color-rgb), 0.04) 100%
+    );
+    background-size: 200% 100%;
+    animation: YcalUsageStats-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes YcalUsageStats-shimmer {
+    0% {
+        background-position: 100% 0;
+    }
+    100% {
+        background-position: -100% 0;
+    }
+}
+
+.YcalUsageStats__value {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 28px;
+    font-variant-numeric: tabular-nums;
+    color: var(--center-channel-color);
+}
+
+.YcalUsageStats__card--primary .YcalUsageStats__value {
+    color: var(--button-bg);
+}
+
+.YcalUsageStats__label {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+    color: rgba(var(--center-channel-color-rgb), 0.72);
+}
+
+.YcalUsageStats__footer {
+    margin: 12px 0 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: rgba(var(--center-channel-color-rgb), 0.64);
+}

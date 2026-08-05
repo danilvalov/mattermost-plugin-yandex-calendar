@@ -292,6 +292,21 @@ func (mr *MockStoreMockRecorder) GetSetting(arg0, arg1 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSetting", reflect.TypeOf((*MockStore)(nil).GetSetting), arg0, arg1)
 }
 
+// GetStats mocks base method.
+func (m *MockStore) GetStats() (*store.Stats, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStats")
+	ret0, _ := ret[0].(*store.Stats)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStats indicates an expected call of GetStats.
+func (mr *MockStoreMockRecorder) GetStats() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStats", reflect.TypeOf((*MockStore)(nil).GetStats))
+}
+
 // GetSubscriptionCount mocks base method.
 func (m *MockStore) GetSubscriptionCount() (uint64, error) {
 	m.ctrl.T.Helper()
